@@ -39,35 +39,46 @@ SplitCase buildSplitCase(
   SplitType type,
   Random random,
 ) {
+  final ids = randomMemberIds(participantCount + random.nextInt(3), random);
+  final participants = ids.take(participantCount).toList();
+  return SplitCase(amount, buildSplit(amount, participants, type, random), ids);
+}
+
+/// [count] distinct random 8-hex-digit ids, in random order.
+Set<String> randomMemberIds(int count, Random random) {
   final ids = <String>{};
-  final groupSize = participantCount + random.nextInt(3);
-  while (ids.length < groupSize) {
+  while (ids.length < count) {
     ids.add(random.nextInt(1 << 32).toRadixString(16).padLeft(8, '0'));
   }
-  final participants = ids.take(participantCount).toList();
-
-  final split = switch (type) {
-    SplitType.equal => Split.equal(participants.toSet()),
-    SplitType.exact => Split.exact({
-      for (final (i, part) in _partition(
-        amount.minorUnits,
-        participantCount,
-        random,
-      ).indexed)
-        participants[i]: Money(part, amount.currency),
-    }),
-    SplitType.percentage => Split.percentage({
-      for (final (i, part) in _partition(
-        10000,
-        participantCount,
-        random,
-      ).indexed)
-        participants[i]: part,
-    }),
-    SplitType.shares => Split.shares(_weights(participants, random)),
-  };
-  return SplitCase(amount, split, ids);
+  return ids;
 }
+
+/// A valid split of [amount] of the given [type] among [participants].
+Split buildSplit(
+  Money amount,
+  List<String> participants,
+  SplitType type,
+  Random random,
+) => switch (type) {
+  SplitType.equal => Split.equal(participants.toSet()),
+  SplitType.exact => Split.exact({
+    for (final (i, part) in _partition(
+      amount.minorUnits,
+      participants.length,
+      random,
+    ).indexed)
+      participants[i]: Money(part, amount.currency),
+  }),
+  SplitType.percentage => Split.percentage({
+    for (final (i, part) in _partition(
+      10000,
+      participants.length,
+      random,
+    ).indexed)
+      participants[i]: part,
+  }),
+  SplitType.shares => Split.shares(_weights(participants, random)),
+};
 
 /// [total] cut into [parts] non-negative integers at random points.
 List<int> _partition(int total, int parts, Random random) {

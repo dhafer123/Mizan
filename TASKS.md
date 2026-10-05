@@ -28,7 +28,7 @@ The money and group logic is built and proven first, with no UI, because everyth
   `computeShares` for equal, exact, percentage and shares (weights), plus subsets of members. Largest-remainder rounding by member id.
   *Done when:* property tests (glados) show shares always sum to the amount, and are deterministic for the same input.
 
-- [ ] **1.5 Balances** (§4)
+- [x] **1.5 Balances** (§4)
   `computeBalances(expenses, settlements)`, including reversing settlements.
   *Done when:* the property test "balances sum to 0" passes, and the worked example (rent 900 / groceries 120 / internet 60 / trip 300 → +540 / −90 / −450) is a named test.
 
@@ -211,3 +211,4 @@ The money and group logic is built and proven first, with no UI, because everyth
 - 2026-10-05: 1.2 — Import check is an allowlist (pure-Dart packages only) and also covers `core/`, since domain builds on it. CI runs on push to any branch (no `gh` CLI for PR-only triggers). Verified: run 37301640329 failed on a deliberate flutter import in domain/.
 - 2026-10-05: 1.3 — Mixing currencies in `Money` arithmetic throws `CurrencyMismatchError` (a bug, not a user error); wrong-currency *input* is a `MoneyParseFailure`. Parser: a lone "." or "," is the decimal point ("4,500" = 4.500 DT), except "1,234" for 2-decimal currencies. `FakeClock` lives in `lib/core/clock/` so integration tests can use it. CI also enforces domain + core line coverage ≥ 90% (`tool/check_coverage.dart`).
 - 2026-10-05: 1.4 — `Split` is a freezed union (equal / exact / percentage / shares); the participants are the subset. Percentages are integer basis points (33.33% = 3333, must total 10000), so no doubles. Amount must be > 0; zero-weight members stay in the result with a 0 share. Rounding: largest remainder first, then lowest member id; `BigInt` for amount × weight.
+- 2026-10-05: 1.5 — `SharedExpense` stores the `Split` *and* the computed `shares` (rounding changes can't move old balances). A reversing settlement mirrors the original (from/to swapped, `reversesId` set), so balances need no special case. `ComputeBalances` returns a `Result` and rejects rows that would break the zero sum. Sync metadata (`version`, `deleted`, …) is deferred to 2.1/3.3; callers pass live rows only.
