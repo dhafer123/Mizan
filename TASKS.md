@@ -32,7 +32,7 @@ The money and group logic is built and proven first, with no UI, because everyth
   `computeBalances(expenses, settlements)`, including reversing settlements.
   *Done when:* the property test "balances sum to 0" passes, and the worked example (rent 900 / groceries 120 / internet 60 / trip 300 → +540 / −90 / −450) is a named test.
 
-- [ ] **1.6 Debt simplification** (§4)
+- [x] **1.6 Debt simplification** (§4)
   Greedy `simplifyDebts`.
   *Done when:* property tests show at most n − 1 transfers and that applying them zeroes every balance; the worked example gives 2 transfers (Sami → you 450, Ali → you 90).
 
@@ -212,3 +212,4 @@ The money and group logic is built and proven first, with no UI, because everyth
 - 2026-10-05: 1.3 — Mixing currencies in `Money` arithmetic throws `CurrencyMismatchError` (a bug, not a user error); wrong-currency *input* is a `MoneyParseFailure`. Parser: a lone "." or "," is the decimal point ("4,500" = 4.500 DT), except "1,234" for 2-decimal currencies. `FakeClock` lives in `lib/core/clock/` so integration tests can use it. CI also enforces domain + core line coverage ≥ 90% (`tool/check_coverage.dart`).
 - 2026-10-05: 1.4 — `Split` is a freezed union (equal / exact / percentage / shares); the participants are the subset. Percentages are integer basis points (33.33% = 3333, must total 10000), so no doubles. Amount must be > 0; zero-weight members stay in the result with a 0 share. Rounding: largest remainder first, then lowest member id; `BigInt` for amount × weight.
 - 2026-10-05: 1.5 — `SharedExpense` stores the `Split` *and* the computed `shares` (rounding changes can't move old balances). A reversing settlement mirrors the original (from/to swapped, `reversesId` set), so balances need no special case. `ComputeBalances` returns a `Result` and rejects rows that would break the zero sum. Sync metadata (`version`, `deleted`, …) is deferred to 2.1/3.3; callers pass live rows only.
+- 2026-10-05: 1.6 — `SimplifyDebts` returns `Result<List<Transfer>, SimplifyFailure>` (rejects unbalanced or mixed-currency input). Greedy with ties to the lowest member id, so every device suggests the same transfers. Gate 1 numbers recorded in METRICS.md.

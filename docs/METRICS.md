@@ -8,8 +8,8 @@ Rules: release build, real device, median of 10 runs for timings. Write the date
 
 | Date | Check | Result |
 |---|---|---|
-| | Domain test coverage | % |
-| | Property tests (splits, balances, simplification) | pass / runs |
+| 2026-10-05 | Domain test coverage | 98.1% (357/364 lines, `core/` + `*/domain/`) |
+| 2026-10-05 | Property tests (splits, balances, simplification) | 13 / 13 pass, 1,000 runs each (13,000 cases) |
 | | Sync simulation: random scenarios, all 4 invariants hold | x / 1,000 |
 | | Server conflict-policy tests | pass / total |
 
