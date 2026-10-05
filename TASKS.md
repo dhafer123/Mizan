@@ -16,7 +16,7 @@ The money and group logic is built and proven first, with no UI, because everyth
   `app/` (Flutter), `server/` (empty for now), `docs/`. Feature folders per §3, Riverpod, go_router, freezed, lints, README stub.
   *Done when:* the app runs and shows a placeholder home screen; analyze and test pass.
 
-- [ ] **1.2 CI**
+- [x] **1.2 CI**
   GitHub Actions: `flutter analyze`, `flutter test --coverage`. Add a check that fails if any file under `*/domain/` imports flutter, drift, dio or a plugin.
   *Done when:* CI is green, and the import check fails on a deliberately bad import.
 
@@ -208,3 +208,4 @@ The money and group logic is built and proven first, with no UI, because everyth
 
 <!-- One dated line per decision that changed the plan, e.g. "2026-10-22: pull pagination size 500 → 200, timeouts on slow 3G." -->
 - 2026-10-05: 1.1 — Riverpod stack resolves to flutter_riverpod 3.1 / riverpod_generator 4.0.0+1 on Dart 3.10.8 (newer generator needs Dart ≥ 3.12). Generated `*.g.dart` / `*.freezed.dart` are gitignored; CI must run build_runner.
+- 2026-10-05: 1.2 — Import check is an allowlist (pure-Dart packages only) and also covers `core/`, since domain builds on it. CI runs on push to any branch (no `gh` CLI for PR-only triggers). Verified: run 37301640329 failed on a deliberate flutter import in domain/.
