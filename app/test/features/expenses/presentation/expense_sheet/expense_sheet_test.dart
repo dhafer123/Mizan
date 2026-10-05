@@ -9,6 +9,8 @@ import 'package:mizan/core/money/money.dart';
 import 'package:mizan/features/expenses/domain/entities/category.dart';
 import 'package:mizan/features/expenses/domain/entities/default_categories.dart';
 import 'package:mizan/features/expenses/domain/entities/expense.dart';
+import 'package:mizan/features/expenses/domain/value_objects/category_error.dart';
+import 'package:mizan/features/expenses/domain/value_objects/category_failure.dart';
 import 'package:mizan/features/expenses/domain/value_objects/expense_error.dart';
 import 'package:mizan/features/expenses/domain/value_objects/expense_failure.dart';
 import 'package:mizan/features/expenses/presentation/expense_sheet/expense_sheet.dart';
@@ -255,7 +257,7 @@ void main() {
 
     testWidgets('categories that fail to load show a message', (tester) async {
       final h = _Harness(tester);
-      h.categories.failure = const ExpenseFailure(ExpenseError.storage);
+      h.categories.failure = const CategoryFailure(CategoryError.storage);
       await h.open();
 
       expect(

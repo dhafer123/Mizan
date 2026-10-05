@@ -36,7 +36,9 @@ class ExpenseRepositoryImpl implements ExpenseRepository {
           .map<Result<List<Expense>, ExpenseFailure>>(
             (rows) => Ok(rows.map(ExpenseMapper.toDomain).toList()),
           )
-          .transform(storageErrorsAsFailures());
+          .transform(
+            storageErrorsAsFailures(const ExpenseFailure(ExpenseError.storage)),
+          );
 
   static Future<Result<void, ExpenseFailure>> _guard(
     Future<Object?> Function() write,

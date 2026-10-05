@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../app/router/app_router.dart';
 import '../../../../core/clock/year_month.dart';
 import '../../../../core/result/result.dart';
 import '../../domain/entities/category.dart';
@@ -32,7 +34,16 @@ class ExpenseListScreen extends ConsumerWidget {
     };
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Expenses')),
+      appBar: AppBar(
+        title: const Text('Expenses'),
+        actions: [
+          IconButton(
+            onPressed: () => context.push(AppRoutes.categories),
+            icon: const Icon(Icons.category_outlined),
+            tooltip: 'Categories',
+          ),
+        ],
+      ),
       body: Column(
         children: [
           _MonthBar(month: month),

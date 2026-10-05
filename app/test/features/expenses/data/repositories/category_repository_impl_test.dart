@@ -5,7 +5,7 @@ import 'package:mizan/core/money/money.dart';
 import 'package:mizan/features/expenses/data/repositories/category_repository_impl.dart';
 import 'package:mizan/features/expenses/domain/entities/category.dart';
 import 'package:mizan/features/expenses/domain/entities/default_categories.dart';
-import 'package:mizan/features/expenses/domain/value_objects/expense_error.dart';
+import 'package:mizan/features/expenses/domain/value_objects/category_error.dart';
 
 import '../../../../support/test_database.dart';
 
@@ -34,7 +34,10 @@ void main() {
 
   setUp(() {
     db = openTestDatabase();
-    repository = CategoryRepositoryImpl(db.categoriesDao);
+    repository = CategoryRepositoryImpl(
+      db.categoriesDao,
+      currency: Currency.tnd,
+    );
   });
   tearDown(() => db.close());
 
@@ -87,6 +90,80 @@ void main() {
 
     final result = await repository.watchAll().first;
 
-    expect(result.failureOrNull?.error, ExpenseError.storage);
+    expect(result.failureOrNull?.error, CategoryError.storage);
+  });
+
+  test('getAll reads the same merged list once', () async {
+    await store(_row(id: 'food', name: 'Eating out', icon: 'food'));
+    await store(_row(id: 'c1', name: 'Gym'));
+
+    expect((await repository.getAll()).valueOrNull, await all());
+  });
+
+  test('getAll turns an unreadable row into storage', () async {
+    await store(_row(id: 'c1', name: 'Coffee', limit: 1, currency: 'XXX'));
+
+    final result = await repository.getAll();
+
+    expect(result.failureOrNull?.error, CategoryError.storage);
+  });
+
+  group('writes', () {
+    test('add stores a custom category, after the defaults', () async {
+      const gym = Category(
+        id: 'c1',
+        name: 'Gym',
+        icon: 'sport',
+        monthlyLimit: Money(30000, Currency.tnd),
+      );
+
+      expect((await repository.add(gym)).isOk, isTrue);
+
+      expect(await all(), [...DefaultCategories.all, gym]);
+    });
+
+    test('a category without a limit is stored in the app currency', () async {
+      await repository.add(
+        const Category(id: 'c1', name: 'Gym', icon: 'sport'),
+      );
+
+      expect((await db.categoriesDao.findById('c1'))!.currency, 'TND');
+    });
+
+    test('update of a default overrides it in place', () async {
+      final renamed = DefaultCategories.food.copyWith(name: 'Eating out');
+
+      expect((await repository.update(renamed)).isOk, isTrue);
+
+      expect((await all()).first, renamed);
+      final [op] = await db.select(db.outbox).get();
+      expect(op.baseVersion, 0);
+    });
+
+    test('update of a stored category saves it', () async {
+      const gym = Category(id: 'c1', name: 'Gym', icon: 'sport');
+      await repository.add(gym);
+
+      await repository.update(gym.copyWith(archived: true));
+
+      expect((await all()).last.archived, isTrue);
+    });
+
+    test('update of an unknown id: notFound', () async {
+      final result = await repository.update(
+        const Category(id: 'nope', name: 'Nope', icon: 'other'),
+      );
+
+      expect(result.failureOrNull?.error, CategoryError.notFound);
+    });
+
+    test('a database error: storage, nothing thrown', () async {
+      const gym = Category(id: 'c1', name: 'Gym', icon: 'sport');
+      await repository.add(gym);
+
+      final duplicate = await repository.add(gym);
+
+      expect(duplicate.failureOrNull?.error, CategoryError.storage);
+    });
   });
 }

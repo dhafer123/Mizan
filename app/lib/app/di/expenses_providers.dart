@@ -5,8 +5,13 @@ import '../../features/expenses/data/repositories/expense_repository_impl.dart';
 import '../../features/expenses/domain/repositories/category_repository.dart';
 import '../../features/expenses/domain/repositories/expense_repository.dart';
 import '../../features/expenses/domain/usecases/add_expense.dart';
+import '../../features/expenses/domain/usecases/archive_category.dart';
+import '../../features/expenses/domain/usecases/create_category.dart';
 import '../../features/expenses/domain/usecases/delete_expense.dart';
+import '../../features/expenses/domain/usecases/edit_category.dart';
 import '../../features/expenses/domain/usecases/edit_expense.dart';
+import '../../features/expenses/domain/usecases/restore_category.dart';
+import '../../features/expenses/domain/usecases/validate_category.dart';
 import '../../features/expenses/domain/usecases/validate_expense.dart';
 import '../../features/expenses/domain/usecases/watch_categories.dart';
 import '../../features/expenses/domain/usecases/watch_month_expenses.dart';
@@ -20,8 +25,10 @@ ExpenseRepository expenseRepository(Ref ref) =>
     ExpenseRepositoryImpl(ref.watch(appDatabaseProvider).expensesDao);
 
 @Riverpod(keepAlive: true)
-CategoryRepository categoryRepository(Ref ref) =>
-    CategoryRepositoryImpl(ref.watch(appDatabaseProvider).categoriesDao);
+CategoryRepository categoryRepository(Ref ref) => CategoryRepositoryImpl(
+  ref.watch(appDatabaseProvider).categoriesDao,
+  currency: ref.watch(appCurrencyProvider),
+);
 
 @Riverpod(keepAlive: true)
 ValidateExpense validateExpense(Ref ref) =>
@@ -51,3 +58,29 @@ WatchMonthExpenses watchMonthExpenses(Ref ref) =>
 @Riverpod(keepAlive: true)
 WatchCategories watchCategories(Ref ref) =>
     WatchCategories(ref.watch(categoryRepositoryProvider));
+
+@Riverpod(keepAlive: true)
+ValidateCategory validateCategory(Ref ref) => const ValidateCategory();
+
+@Riverpod(keepAlive: true)
+CreateCategory createCategory(Ref ref) => CreateCategory(
+  ref.watch(categoryRepositoryProvider),
+  ref.watch(idGeneratorProvider),
+  ref.watch(validateCategoryProvider),
+);
+
+@Riverpod(keepAlive: true)
+EditCategory editCategory(Ref ref) => EditCategory(
+  ref.watch(categoryRepositoryProvider),
+  ref.watch(validateCategoryProvider),
+);
+
+@Riverpod(keepAlive: true)
+ArchiveCategory archiveCategory(Ref ref) =>
+    ArchiveCategory(ref.watch(categoryRepositoryProvider));
+
+@Riverpod(keepAlive: true)
+RestoreCategory restoreCategory(Ref ref) => RestoreCategory(
+  ref.watch(categoryRepositoryProvider),
+  ref.watch(validateCategoryProvider),
+);
