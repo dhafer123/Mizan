@@ -24,7 +24,7 @@ The money and group logic is built and proven first, with no UI, because everyth
   `Money` (int minor units, currency, add/subtract/compare, parse and format at the edge), `Result<T, Failure>`, a `Clock` interface with a fake, and a UUIDv7 generator.
   *Done when:* unit tests cover parsing "4.5", "4,500" and "4.500 DT" → 4500, negative values and currency mismatches.
 
-- [ ] **1.4 Splits** (§4)
+- [x] **1.4 Splits** (§4)
   `computeShares` for equal, exact, percentage and shares (weights), plus subsets of members. Largest-remainder rounding by member id.
   *Done when:* property tests (glados) show shares always sum to the amount, and are deterministic for the same input.
 
@@ -210,3 +210,4 @@ The money and group logic is built and proven first, with no UI, because everyth
 - 2026-10-05: 1.1 — Riverpod stack resolves to flutter_riverpod 3.1 / riverpod_generator 4.0.0+1 on Dart 3.10.8 (newer generator needs Dart ≥ 3.12). Generated `*.g.dart` / `*.freezed.dart` are gitignored; CI must run build_runner.
 - 2026-10-05: 1.2 — Import check is an allowlist (pure-Dart packages only) and also covers `core/`, since domain builds on it. CI runs on push to any branch (no `gh` CLI for PR-only triggers). Verified: run 37301640329 failed on a deliberate flutter import in domain/.
 - 2026-10-05: 1.3 — Mixing currencies in `Money` arithmetic throws `CurrencyMismatchError` (a bug, not a user error); wrong-currency *input* is a `MoneyParseFailure`. Parser: a lone "." or "," is the decimal point ("4,500" = 4.500 DT), except "1,234" for 2-decimal currencies. `FakeClock` lives in `lib/core/clock/` so integration tests can use it. CI also enforces domain + core line coverage ≥ 90% (`tool/check_coverage.dart`).
+- 2026-10-05: 1.4 — `Split` is a freezed union (equal / exact / percentage / shares); the participants are the subset. Percentages are integer basis points (33.33% = 3333, must total 10000), so no doubles. Amount must be > 0; zero-weight members stay in the result with a 0 share. Rounding: largest remainder first, then lowest member id; `BigInt` for amount × weight.
