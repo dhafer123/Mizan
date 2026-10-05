@@ -4,7 +4,9 @@ import 'package:drift_flutter/drift_flutter.dart';
 import '../../core/clock/clock.dart';
 import '../../core/ids/id_generator.dart';
 import '../../features/budget/data/db/budget_category_limits_table.dart';
+import '../../features/budget/data/db/budgets_dao.dart';
 import '../../features/budget/data/db/budgets_table.dart';
+import '../../features/budget/data/db/income_sources_dao.dart';
 import '../../features/budget/data/db/income_sources_table.dart';
 import '../../features/expenses/data/db/categories_dao.dart';
 import '../../features/expenses/data/db/categories_table.dart';
@@ -35,7 +37,14 @@ part 'app_database.g.dart';
     SyncState,
     EntityHistory,
   ],
-  daos: [ExpensesDao, CategoriesDao, OutboxDao, SyncStateDao],
+  daos: [
+    ExpensesDao,
+    CategoriesDao,
+    IncomeSourcesDao,
+    BudgetsDao,
+    OutboxDao,
+    SyncStateDao,
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor, {required this.ids, required this.clock});

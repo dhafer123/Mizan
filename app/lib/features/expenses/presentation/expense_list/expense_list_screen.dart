@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/app_router.dart';
-import '../../../../core/clock/year_month.dart';
 import '../../../../core/result/result.dart';
 import '../../domain/entities/category.dart';
 import '../../domain/entities/expense.dart';
@@ -11,6 +10,7 @@ import '../../domain/value_objects/expense_day.dart';
 import '../expense_sheet/expense_sheet.dart';
 import '../shared/categories_provider.dart';
 import '../shared/failure_message.dart';
+import '../shared/month_bar.dart';
 import 'day_header.dart';
 import 'expense_tile.dart';
 import 'hide_expenses.dart';
@@ -46,7 +46,7 @@ class ExpenseListScreen extends ConsumerWidget {
       ),
       body: Column(
         children: [
-          _MonthBar(month: month),
+          MonthBar(month: month),
           const Divider(height: 1),
           Expanded(
             child: days.when(
@@ -74,46 +74,6 @@ class ExpenseListScreen extends ConsumerWidget {
   }
 }
 
-class _MonthBar extends ConsumerWidget {
-  const _MonthBar({required this.month});
-
-  final YearMonth month;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final selected = ref.read(selectedMonthProvider.notifier);
-    final isCurrent = month.compareTo(selected.current) >= 0;
-    final label = MaterialLocalizations.of(
-      context,
-    ).formatMonthYear(DateTime(month.year, month.month));
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: selected.previous,
-            icon: const Icon(Icons.chevron_left),
-            tooltip: 'Previous month',
-          ),
-          Expanded(
-            child: Text(
-              label,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          ),
-          IconButton(
-            onPressed: isCurrent ? null : selected.next,
-            icon: const Icon(Icons.chevron_right),
-            tooltip: 'Next month',
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _DayList extends ConsumerWidget {
   const _DayList({required this.days, required this.categories});
 
@@ -126,7 +86,10 @@ class _DayList extends ConsumerWidget {
       for (final day in days) ...[day, ...day.expenses],
     ];
     return ListView.builder(
-      padding: const EdgeInsets.only(bottom: 88), // clear of the add button
+      // Clear of the add button and the system inset.
+      padding: EdgeInsets.only(
+        bottom: 88 + MediaQuery.paddingOf(context).bottom,
+      ),
       itemCount: rows.length,
       itemBuilder: (context, index) => switch (rows[index]) {
         final ExpenseDay day => DayHeader(key: ValueKey(day.day), day: day),

@@ -34,6 +34,12 @@ class HomeScreen extends StatelessWidget {
                 icon: const Icon(Icons.receipt_long_outlined),
                 label: const Text('Expenses'),
               ),
+              const SizedBox(height: 12),
+              FilledButton.tonalIcon(
+                onPressed: () => context.push(AppRoutes.budget),
+                icon: const Icon(Icons.savings_outlined),
+                label: const Text('Budget'),
+              ),
             ],
           ),
         ),

@@ -1,7 +1,9 @@
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../features/budget/presentation/budget/budget_screen.dart';
 import '../../features/budget/presentation/home/home_screen.dart';
+import '../../features/budget/presentation/income/income_screen.dart';
 import '../../features/expenses/presentation/categories/categories_screen.dart';
 import '../../features/expenses/presentation/expense_list/expense_list_screen.dart';
 
@@ -12,6 +14,8 @@ abstract final class AppRoutes {
   static const home = '/';
   static const expenses = '/expenses';
   static const categories = '/categories';
+  static const budget = '/budget';
+  static const income = '/income';
 }
 
 @Riverpod(keepAlive: true)
@@ -30,6 +34,14 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: AppRoutes.categories,
         builder: (context, state) => const CategoriesScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.budget,
+        builder: (context, state) => const BudgetScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.income,
+        builder: (context, state) => const IncomeScreen(),
       ),
     ],
   );

@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import '../../../../core/result/failure.dart';
-import '../../../../core/result/result.dart';
+import 'failure.dart';
+import 'result.dart';
 
 /// Turns errors in a watched query (database or row mapping) into an [Err]
 /// carrying [failure], so the stream never errors and the layer above never

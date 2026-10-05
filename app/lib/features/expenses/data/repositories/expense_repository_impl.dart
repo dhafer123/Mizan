@@ -1,12 +1,12 @@
 import '../../../../core/clock/year_month.dart';
 import '../../../../core/result/result.dart';
+import '../../../../core/result/storage_errors_as_failures.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/repositories/expense_repository.dart';
 import '../../domain/value_objects/expense_error.dart';
 import '../../domain/value_objects/expense_failure.dart';
 import '../db/expenses_dao.dart';
 import '../mappers/expense_mapper.dart';
-import 'storage_errors_as_failures.dart';
 
 /// [ExpenseRepository] on the local drift database. Database errors become
 /// [ExpenseFailure]s; nothing is thrown past this class.

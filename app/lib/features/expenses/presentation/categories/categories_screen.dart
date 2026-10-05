@@ -50,7 +50,10 @@ class _CategoryList extends ConsumerWidget {
     final theme = Theme.of(context);
 
     return ListView(
-      padding: const EdgeInsets.only(bottom: 88), // clear of the add button
+      // Clear of the add button and the system inset.
+      padding: EdgeInsets.only(
+        bottom: 88 + MediaQuery.paddingOf(context).bottom,
+      ),
       children: [
         for (final category in active)
           _CategoryTile(

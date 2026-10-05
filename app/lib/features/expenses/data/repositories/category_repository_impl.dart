@@ -1,6 +1,7 @@
 import '../../../../app/db/app_database.dart';
 import '../../../../core/money/currency.dart';
 import '../../../../core/result/result.dart';
+import '../../../../core/result/storage_errors_as_failures.dart';
 import '../../domain/entities/category.dart';
 import '../../domain/entities/default_categories.dart';
 import '../../domain/repositories/category_repository.dart';
@@ -8,7 +9,6 @@ import '../../domain/value_objects/category_error.dart';
 import '../../domain/value_objects/category_failure.dart';
 import '../db/categories_dao.dart';
 import '../mappers/category_mapper.dart';
-import 'storage_errors_as_failures.dart';
 
 /// The built-in defaults, with stored rows on top: a row with a default's id
 /// replaces it in place, other rows follow by name. Database errors become
