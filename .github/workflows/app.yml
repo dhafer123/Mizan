@@ -1,0 +1,48 @@
+name: app
+
+on:
+  # Every branch, so feature branches (and their PRs) get checked.
+  push:
+    paths: [app/**, .github/workflows/app.yml]
+
+concurrency:
+  group: app-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: app
+
+jobs:
+  analyze-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.38.9
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Domain purity (no flutter/drift/dio/plugins in domain/ or core/)
+        run: dart run tool/check_domain_imports.dart
+
+      - name: Generate code
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test --coverage
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: coverage
+          path: app/coverage/lcov.info
+          if-no-files-found: error
