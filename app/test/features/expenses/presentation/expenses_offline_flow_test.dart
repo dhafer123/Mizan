@@ -34,7 +34,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Expenses'));
+    await tester.tap(find.byTooltip('Expenses'));
     await tester.pumpAndSettle();
     expect(find.text('No expenses this month'), findsOneWidget);
 

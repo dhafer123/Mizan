@@ -30,7 +30,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Budget'));
+    await tester.tap(find.byTooltip('Budget'));
     await tester.pumpAndSettle();
     expect(
       find.text('Add your income to see what you can spend.'),
@@ -73,7 +73,7 @@ void main() {
     // An expense.
     await tester.pageBack();
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Expenses'));
+    await tester.tap(find.byTooltip('Expenses'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Add'));
     await tester.pumpAndSettle();
@@ -83,7 +83,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.pageBack();
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Budget'));
+    await tester.tap(find.byTooltip('Budget'));
     await tester.pumpAndSettle();
 
     expect(
@@ -108,6 +108,19 @@ void main() {
       find.descendant(of: food, matching: find.text('30.000 DT left')),
       findsOneWidget,
     );
+
+    // The dashboard agrees.
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<Text>(find.byKey(const ValueKey('moneyLeft'))).data,
+      '330.000 DT',
+    );
+    expect(
+      find.text('480.000 DT left of your 600.000 DT budget'),
+      findsOneWidget,
+    );
+    expect(find.text('Next income in 9 days: Grant'), findsOneWidget);
 
     final outbox = await db.select(db.outbox).get();
     expect(outbox.map((op) => op.entity).toSet(), {

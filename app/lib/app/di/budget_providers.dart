@@ -6,6 +6,7 @@ import '../../features/budget/domain/repositories/budget_repository.dart';
 import '../../features/budget/domain/repositories/income_source_repository.dart';
 import '../../features/budget/domain/usecases/add_income_source.dart';
 import '../../features/budget/domain/usecases/compute_budget_overview.dart';
+import '../../features/budget/domain/usecases/compute_dashboard.dart';
 import '../../features/budget/domain/usecases/compute_money_available.dart';
 import '../../features/budget/domain/usecases/delete_income_source.dart';
 import '../../features/budget/domain/usecases/edit_income_source.dart';
@@ -68,3 +69,9 @@ ComputeBudgetOverview computeBudgetOverview(Ref ref) =>
 @Riverpod(keepAlive: true)
 ComputeMoneyAvailable computeMoneyAvailable(Ref ref) =>
     const ComputeMoneyAvailable();
+
+@Riverpod(keepAlive: true)
+ComputeDashboard computeDashboard(Ref ref) => ComputeDashboard(
+  overview: ref.watch(computeBudgetOverviewProvider),
+  available: ref.watch(computeMoneyAvailableProvider),
+);

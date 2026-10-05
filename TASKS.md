@@ -58,9 +58,10 @@ The money and group logic is built and proven first, with no UI, because everyth
   Income sources (monthly on day N, one-off, irregular), monthly budget overall and per category, and a "money available" calculation.
   *Done when:* the use case tests pass, and the budget screen shows used / left per category.
 
-- [ ] **2.5 Home dashboard**
+- [x] **2.5 Home dashboard**
   Money left this month, days until next income, top categories (fl_chart), recent expenses.
   *Done when:* all states (empty month, normal, over budget) are covered by widget tests.
+  *Note:* added fl_chart (approved). "Money left" is income − spending (same as the Budget screen); top 4 categories get a slice, the rest are summed; recent = newest 5 from this and last month, so it isn't empty on the 1st. Home's Expenses/Budget buttons moved to the app bar.
 
 - [ ] **2.6 Settings: app lock + CSV export**
   PIN or biometric lock (`local_auth`), and CSV export of expenses.
