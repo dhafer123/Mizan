@@ -6,6 +6,7 @@ import '../../core/ids/id_generator.dart';
 import '../../features/budget/data/db/budget_category_limits_table.dart';
 import '../../features/budget/data/db/budgets_table.dart';
 import '../../features/budget/data/db/income_sources_table.dart';
+import '../../features/expenses/data/db/categories_dao.dart';
 import '../../features/expenses/data/db/categories_table.dart';
 import '../../features/expenses/data/db/expenses_dao.dart';
 import '../../features/expenses/data/db/expenses_table.dart';
@@ -34,7 +35,7 @@ part 'app_database.g.dart';
     SyncState,
     EntityHistory,
   ],
-  daos: [ExpensesDao, OutboxDao, SyncStateDao],
+  daos: [ExpensesDao, CategoriesDao, OutboxDao, SyncStateDao],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor, {required this.ids, required this.clock});

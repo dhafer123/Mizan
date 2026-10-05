@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
-/// Placeholder home screen. Becomes the dashboard in task 2.5.
+import '../../../../app/router/app_router.dart';
+
+/// Placeholder home screen. Becomes the dashboard in task 2.5; until then it
+/// links to the expense list.
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -23,6 +27,12 @@ class HomeScreen extends StatelessWidget {
                 'Your spending and budget will show up here.',
                 style: textTheme.bodyMedium,
                 textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                onPressed: () => context.push(AppRoutes.expenses),
+                icon: const Icon(Icons.receipt_long_outlined),
+                label: const Text('Expenses'),
               ),
             ],
           ),

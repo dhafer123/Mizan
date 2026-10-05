@@ -19,6 +19,20 @@ class ExpensesDao extends DatabaseAccessor<AppDatabase>
   Future<ExpenseRow?> findById(String id) =>
       (select(expenses)..where((e) => e.id.equals(id))).getSingleOrNull();
 
+  /// Live (not deleted) expenses dated in [from, to), re-emitted on every
+  /// change. Dates are stored as UTC ISO-8601 text, which sorts like time, so
+  /// both bounds must be UTC too.
+  Stream<List<ExpenseRow>> watchBetween(DateTime from, DateTime to) {
+    assert(from.isUtc && to.isUtc, 'date bounds must be UTC');
+    return (select(expenses)..where(
+          (e) =>
+              e.deleted.not() &
+              e.date.isBiggerOrEqualValue(from) &
+              e.date.isSmallerThanValue(to),
+        ))
+        .watch();
+  }
+
   Future<void> insertExpense(ExpenseRow row) =>
       attachedDatabase.outboxDao.recordWrite(
         PendingOp(
