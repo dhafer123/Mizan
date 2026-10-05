@@ -165,7 +165,13 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
       // Stay above the keyboard.
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+        // Clear of the system navigation bar too (edge-to-edge Android).
+        padding: EdgeInsets.fromLTRB(
+          24,
+          0,
+          24,
+          24 + MediaQuery.paddingOf(context).bottom,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
@@ -182,6 +188,9 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
                 decimal: true,
               ),
               textInputAction: TextInputAction.next,
+              onChanged: (_) {
+                if (_amountError != null) setState(() => _amountError = null);
+              },
               decoration: InputDecoration(
                 labelText: 'Amount',
                 suffixText: currency.symbol,
@@ -231,6 +240,9 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
               controller: _note,
               maxLength: ValidateExpense.maxNoteLength,
               textCapitalization: TextCapitalization.sentences,
+              onChanged: (_) {
+                if (_noteError != null) setState(() => _noteError = null);
+              },
               decoration: InputDecoration(
                 labelText: 'Note (optional)',
                 errorText: _noteError,
@@ -281,6 +293,9 @@ class _CategoryPicker extends ConsumerWidget {
               for (final Category category in categories)
                 if (!category.archived || category.id == selectedId)
                   ChoiceChip(
+                    // The fill shows the selection; a checkmark would cover
+                    // the category icon.
+                    showCheckmark: false,
                     avatar: Icon(categoryIcon(category.icon)),
                     label: Text(category.name),
                     selected: category.id == selectedId,

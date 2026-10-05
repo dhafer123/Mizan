@@ -193,6 +193,35 @@ void main() {
       expect(h.closed, isTrue);
     });
 
+    testWidgets('an amount error clears as soon as the amount is edited', (
+      tester,
+    ) async {
+      final h = _Harness(tester);
+      await h.open();
+
+      await h.save();
+      expect(find.text('Enter an amount.'), findsOneWidget);
+
+      await h.enterAmount('4');
+      await tester.pump();
+      expect(find.text('Enter an amount.'), findsNothing);
+    });
+
+    testWidgets('a selected chip keeps its icon (no checkmark)', (
+      tester,
+    ) async {
+      final h = _Harness(tester);
+      await h.open();
+
+      await h.pickCategory('Food');
+
+      final food = tester.widget<ChoiceChip>(
+        find.widgetWithText(ChoiceChip, 'Food'),
+      );
+      expect(food.selected, isTrue);
+      expect(food.showCheckmark, isFalse);
+    });
+
     testWidgets('a fixed error is cleared on the next save', (tester) async {
       final h = _Harness(tester);
       await h.open();
