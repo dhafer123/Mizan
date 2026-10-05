@@ -1,0 +1,13 @@
+targets:
+  $default:
+    builders:
+      drift_dev:
+        options:
+          # ISO-8601 text keeps milliseconds and the UTC flag; the default
+          # (unix seconds) loses both.
+          store_date_time_values_as_text: true
+          # For `dart run drift_dev make-migrations`.
+          databases:
+            app_database: lib/app/db/app_database.dart
+          schema_dir: drift_schemas/
+          test_dir: test/drift/

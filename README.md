@@ -18,7 +18,7 @@ An offline-first student finance app: track spending, get warned **before** you 
 ```bash
 cd app
 flutter pub get
-dart run build_runner build --delete-conflicting-outputs
+dart run build_runner build --force-jit
 flutter analyze
 flutter test
 flutter run

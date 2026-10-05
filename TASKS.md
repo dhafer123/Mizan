@@ -42,7 +42,7 @@ The money and group logic is built and proven first, with no UI, because everyth
 
 ## Week 2 (Oct 13–19): the personal app, offline only
 
-- [ ] **2.1 drift schema + outbox** (§5)
+- [x] **2.1 drift schema + outbox** (§5)
   Tables for expenses, categories, income sources, budgets, outbox, sync_state and entity_history. Sync metadata columns on synced tables. Migrations set up.
   *Done when:* DAO tests on an in-memory DB pass, including a test that an entity write and its outbox append happen in one transaction (a forced failure leaves neither).
 
@@ -213,3 +213,4 @@ The money and group logic is built and proven first, with no UI, because everyth
 - 2026-10-05: 1.4 — `Split` is a freezed union (equal / exact / percentage / shares); the participants are the subset. Percentages are integer basis points (33.33% = 3333, must total 10000), so no doubles. Amount must be > 0; zero-weight members stay in the result with a 0 share. Rounding: largest remainder first, then lowest member id; `BigInt` for amount × weight.
 - 2026-10-05: 1.5 — `SharedExpense` stores the `Split` *and* the computed `shares` (rounding changes can't move old balances). A reversing settlement mirrors the original (from/to swapped, `reversesId` set), so balances need no special case. `ComputeBalances` returns a `Result` and rejects rows that would break the zero sum. Sync metadata (`version`, `deleted`, …) is deferred to 2.1/3.3; callers pass live rows only.
 - 2026-10-05: 1.6 — `SimplifyDebts` returns `Result<List<Transfer>, SimplifyFailure>` (rejects unbalanced or mixed-currency input). Greedy with ties to the lowest member id, so every device suggests the same transfers. Gate 1 numbers recorded in METRICS.md.
+- 2026-10-05: 2.1 — Added drift 2.31 + drift_dev + drift_flutter (approved); sqlite3 as a dev dep so host tests load Windows' built-in `winsqlite3.dll`. `AppDatabase` lives in `lib/app/db/`; tables and DAOs in each feature's `data/db/`. Synced writes go through `OutboxDao.recordWrite` (write + outbox append in one transaction). Dates stored as ISO-8601 text. build_runner now needs `--force-jit` (a dependency declares build hooks). CI fails if `drift_schemas/` is out of date.

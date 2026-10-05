@@ -29,11 +29,25 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Install SQLite (for drift tests on the host)
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
+
       - name: Domain purity (no flutter/drift/dio/plugins in domain/ or core/)
         run: dart run tool/check_domain_imports.dart
 
+      # JIT: some dependencies declare build hooks, which AOT compilation of
+      # the build script rejects.
       - name: Generate code
-        run: dart run build_runner build --delete-conflicting-outputs
+        run: dart run build_runner build --force-jit
+
+      - name: Schema snapshot is up to date (drift make-migrations)
+        run: |
+          dart run drift_dev make-migrations
+          git diff --exit-code -- drift_schemas || {
+            echo "::error::The drift schema changed. Bump schemaVersion, run 'dart run drift_dev make-migrations' and commit drift_schemas/ and the generated steps."
+            exit 1
+          }
+          test -z "$(git status --porcelain -- drift_schemas)"
 
       - name: Analyze
         run: flutter analyze
