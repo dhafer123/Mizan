@@ -6,6 +6,8 @@ import '../../features/budget/presentation/home/home_screen.dart';
 import '../../features/budget/presentation/income/income_screen.dart';
 import '../../features/expenses/presentation/categories/categories_screen.dart';
 import '../../features/expenses/presentation/expense_list/expense_list_screen.dart';
+import '../../features/settings/presentation/pin/pin_setup_screen.dart';
+import '../../features/settings/presentation/settings_screen.dart';
 
 part 'app_router.g.dart';
 
@@ -16,6 +18,8 @@ abstract final class AppRoutes {
   static const categories = '/categories';
   static const budget = '/budget';
   static const income = '/income';
+  static const settings = '/settings';
+  static const pin = '/settings/pin';
 }
 
 @Riverpod(keepAlive: true)
@@ -42,6 +46,14 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: AppRoutes.income,
         builder: (context, state) => const IncomeScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.settings,
+        builder: (context, state) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.pin,
+        builder: (context, state) => const PinSetupScreen(),
       ),
     ],
   );

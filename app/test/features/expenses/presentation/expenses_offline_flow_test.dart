@@ -6,10 +6,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mizan/app/db/app_database.dart';
 import 'package:mizan/app/di/core_providers.dart';
 import 'package:mizan/app/di/database_providers.dart';
+import 'package:mizan/app/di/settings_providers.dart';
 import 'package:mizan/app/mizan_app.dart';
 import 'package:mizan/core/clock/fake_clock.dart';
 import 'package:mizan/features/sync/data/db/outbox_op_type.dart';
 
+import '../../../support/fake_biometric_authenticator.dart';
+import '../../../support/fake_lock_settings_repository.dart';
 import '../../../support/sequential_id_generator.dart';
 import '../../../support/test_database.dart';
 
@@ -28,6 +31,12 @@ void main() {
           clockProvider.overrideWithValue(clock),
           idGeneratorProvider.overrideWithValue(ids),
           appDatabaseProvider.overrideWithValue(db),
+          lockSettingsRepositoryProvider.overrideWithValue(
+            FakeLockSettingsRepository(),
+          ),
+          biometricAuthenticatorProvider.overrideWithValue(
+            FakeBiometricAuthenticator(available: false),
+          ),
         ],
         child: const MizanApp(),
       ),

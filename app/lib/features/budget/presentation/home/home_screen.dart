@@ -32,6 +32,11 @@ class HomeScreen extends ConsumerWidget {
             icon: const Icon(Icons.savings_outlined),
             tooltip: 'Budget',
           ),
+          IconButton(
+            onPressed: () => context.push(AppRoutes.settings),
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Settings',
+          ),
         ],
       ),
       body: ref

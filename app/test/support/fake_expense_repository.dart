@@ -52,6 +52,16 @@ class FakeExpenseRepository implements ExpenseRepository {
     return const Ok(null);
   }
 
+  /// When set, [getAll] fails with this.
+  ExpenseFailure? readFailure;
+
+  @override
+  Future<Result<List<Expense>, ExpenseFailure>> getAll() async =>
+      switch (readFailure) {
+        final failure? => Err(failure),
+        null => Ok(_live.values.toList()),
+      };
+
   @override
   Stream<Result<List<Expense>, ExpenseFailure>> watchMonth(
     YearMonth month,

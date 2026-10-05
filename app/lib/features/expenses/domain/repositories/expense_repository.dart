@@ -14,6 +14,9 @@ abstract interface class ExpenseRepository {
   /// expense is missing or already deleted.
   Future<Result<void, ExpenseFailure>> delete(String id);
 
+  /// Every live (not deleted) expense, read once. In no particular order.
+  Future<Result<List<Expense>, ExpenseFailure>> getAll();
+
   /// The live (not deleted) expenses dated in [month], re-emitted on every
   /// change. In no particular order.
   Stream<Result<List<Expense>, ExpenseFailure>> watchMonth(YearMonth month);

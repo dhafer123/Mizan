@@ -30,6 +30,15 @@ class ExpenseRepositoryImpl implements ExpenseRepository {
       _guard(() => _dao.softDelete(id));
 
   @override
+  Future<Result<List<Expense>, ExpenseFailure>> getAll() async {
+    try {
+      return Ok((await _dao.getLive()).map(ExpenseMapper.toDomain).toList());
+    } on Object {
+      return const Err(ExpenseFailure(ExpenseError.storage));
+    }
+  }
+
+  @override
   Stream<Result<List<Expense>, ExpenseFailure>> watchMonth(YearMonth month) =>
       _dao
           .watchBetween(month.firstDay, month.endExclusive)

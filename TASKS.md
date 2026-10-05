@@ -63,9 +63,10 @@ The money and group logic is built and proven first, with no UI, because everyth
   *Done when:* all states (empty month, normal, over budget) are covered by widget tests.
   *Note:* added fl_chart (approved). "Money left" is income − spending (same as the Budget screen); top 4 categories get a slice, the rest are summed; recent = newest 5 from this and last month, so it isn't empty on the 1st. Home's Expenses/Budget buttons moved to the app bar.
 
-- [ ] **2.6 Settings: app lock + CSV export**
+- [x] **2.6 Settings: app lock + CSV export**
   PIN or biometric lock (`local_auth`), and CSV export of expenses.
   *Done when:* the lock appears on resume after 1 minute in the background, and the exported CSV opens correctly in a spreadsheet.
+  *Note:* PIN (4-6 digits) + optional biometrics; PIN kept in secure storage, not hashed (`crypto` not approved). Export via the Android "save as" picker over a platform channel (no share_plus). minSdk 24, FlutterFragmentActivity. See ADR 0003.
 
 **Gate 2:** you can use the app daily for personal expenses, fully offline. Start logging your own spending now: it becomes forecast test data.
 

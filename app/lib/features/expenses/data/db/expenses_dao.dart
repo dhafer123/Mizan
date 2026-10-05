@@ -19,6 +19,10 @@ class ExpensesDao extends DatabaseAccessor<AppDatabase>
   Future<ExpenseRow?> findById(String id) =>
       (select(expenses)..where((e) => e.id.equals(id))).getSingleOrNull();
 
+  /// Every live (not deleted) expense, once.
+  Future<List<ExpenseRow>> getLive() =>
+      (select(expenses)..where((e) => e.deleted.not())).get();
+
   /// Live (not deleted) expenses dated in [from, to), re-emitted on every
   /// change. Dates are stored as UTC ISO-8601 text, which sorts like time, so
   /// both bounds must be UTC too.
