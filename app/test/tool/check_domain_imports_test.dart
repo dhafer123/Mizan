@@ -107,14 +107,22 @@ part 'ok.freezed.dart';
   });
 
   test('ignores layers outside domain/ and core/, and generated files', () {
-    write('features/groups/data/db/dao.dart',
-        "import 'package:drift/drift.dart';");
-    write('features/groups/presentation/screen.dart',
-        "import 'package:flutter/material.dart';");
-    write('app/di/providers.dart',
-        "import 'package:flutter_riverpod/flutter_riverpod.dart';");
-    write('features/groups/domain/entities/group.g.dart',
-        "import 'package:flutter/material.dart';");
+    write(
+      'features/groups/data/db/dao.dart',
+      "import 'package:drift/drift.dart';",
+    );
+    write(
+      'features/groups/presentation/screen.dart',
+      "import 'package:flutter/material.dart';",
+    );
+    write(
+      'app/di/providers.dart',
+      "import 'package:flutter_riverpod/flutter_riverpod.dart';",
+    );
+    write(
+      'features/groups/domain/entities/group.g.dart',
+      "import 'package:flutter/material.dart';",
+    );
 
     expect(violatingUris(), isEmpty);
   });

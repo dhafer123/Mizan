@@ -30,7 +30,10 @@ const forbiddenDartLibraries = {
 
 const _packageName = 'mizan';
 
-final _directive = RegExp(r'^[ \t]*(?:import|export)\s+([^;]+);', multiLine: true);
+final _directive = RegExp(
+  r'^[ \t]*(?:import|export)\s+([^;]+);',
+  multiLine: true,
+);
 final _quoted = RegExp(r'''['"]([^'"]+)['"]''');
 
 class Violation {
@@ -53,15 +56,18 @@ List<Violation> findViolations(Directory libDir) {
   final root = libDir.absolute.uri;
   final violations = <Violation>[];
 
-  final files = libDir
-      .listSync(recursive: true)
-      .whereType<File>()
-      .where((f) =>
-          f.path.endsWith('.dart') &&
-          !f.path.endsWith('.g.dart') &&
-          !f.path.endsWith('.freezed.dart'))
-      .toList()
-    ..sort((a, b) => a.path.compareTo(b.path));
+  final files =
+      libDir
+          .listSync(recursive: true)
+          .whereType<File>()
+          .where(
+            (f) =>
+                f.path.endsWith('.dart') &&
+                !f.path.endsWith('.g.dart') &&
+                !f.path.endsWith('.freezed.dart'),
+          )
+          .toList()
+        ..sort((a, b) => a.path.compareTo(b.path));
 
   for (final file in files) {
     final fileUri = file.absolute.uri;
@@ -70,7 +76,8 @@ List<Violation> findViolations(Directory libDir) {
 
     final content = file.readAsStringSync();
     for (final directive in _directive.allMatches(content)) {
-      final line = '\n'.allMatches(content.substring(0, directive.start)).length + 1;
+      final line =
+          '\n'.allMatches(content.substring(0, directive.start)).length + 1;
       // Covers conditional imports too: every quoted URI must be allowed.
       for (final quoted in _quoted.allMatches(directive.group(1)!)) {
         final uri = quoted.group(1)!;
@@ -102,7 +109,7 @@ String? _check(String uri, Uri fileUri, Uri root) {
     return allowedPackages.contains(package)
         ? null
         : 'is not an allowed package in domain code '
-            '(allowed: ${allowedPackages.join(', ')})';
+              '(allowed: ${allowedPackages.join(', ')})';
   }
 
   final resolved = fileUri.resolve(uri);

@@ -41,6 +41,9 @@ jobs:
       - name: Test
         run: flutter test --coverage
 
+      - name: Domain + core coverage >= 90%
+        run: dart run tool/check_coverage.dart 90
+
       - uses: actions/upload-artifact@v6
         with:
           name: coverage
