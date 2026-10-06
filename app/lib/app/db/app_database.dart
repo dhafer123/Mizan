@@ -12,6 +12,10 @@ import '../../features/expenses/data/db/categories_dao.dart';
 import '../../features/expenses/data/db/categories_table.dart';
 import '../../features/expenses/data/db/expenses_dao.dart';
 import '../../features/expenses/data/db/expenses_table.dart';
+import '../../features/groups/data/db/group_backfills_table.dart';
+import '../../features/groups/data/db/groups_dao.dart';
+import '../../features/groups/data/db/groups_table.dart';
+import '../../features/groups/data/db/members_table.dart';
 import '../../features/sync/data/db/entity_history_table.dart';
 import '../../features/sync/data/db/outbox_dao.dart';
 import '../../features/sync/data/db/outbox_op_type.dart';
@@ -39,6 +43,9 @@ part 'app_database.g.dart';
     SyncState,
     EntityHistory,
     ServerRows,
+    Groups,
+    Members,
+    GroupBackfills,
   ],
   daos: [
     ExpensesDao,
@@ -47,6 +54,7 @@ part 'app_database.g.dart';
     BudgetsDao,
     OutboxDao,
     SyncStateDao,
+    GroupsDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -72,7 +80,7 @@ class AppDatabase extends _$AppDatabase {
   final Clock clock;
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -88,6 +96,36 @@ class AppDatabase extends _$AppDatabase {
       // queue). Existing rows have none yet; the next pull fills them.
       from2To3: (m, schema) async {
         await m.createTable(schema.serverRows);
+      },
+      // 4.1: groups and members. Their rows were pulled since 3.6 and kept
+      // as shadows (ADR 0008), so build the tables from those: nothing
+      // could queue an op for them before v4, so the shadow is the row.
+      from3To4: (m, schema) async {
+        await m.createTable(schema.groups);
+        await m.createTable(schema.members);
+        await m.createIndex(schema.membersGroup);
+        await m.createTable(schema.groupBackfills);
+        await customStatement('''
+          INSERT INTO "groups"
+            (id, name, currency, version, deleted, updated_by, server_seq)
+          SELECT entity_id, json_extract(state, '\$.name'),
+            json_extract(state, '\$.currency'),
+            json_extract(state, '\$.version'),
+            json_extract(state, '\$.deleted'),
+            json_extract(state, '\$.updatedBy'), server_seq
+          FROM server_rows WHERE entity = 'groups'
+        ''');
+        await customStatement('''
+          INSERT INTO members (id, group_id, user_id, display_name, version,
+            deleted, updated_by, server_seq)
+          SELECT entity_id, json_extract(state, '\$.groupId'),
+            json_extract(state, '\$.userId'),
+            json_extract(state, '\$.displayName'),
+            json_extract(state, '\$.version'),
+            json_extract(state, '\$.deleted'),
+            json_extract(state, '\$.updatedBy'), server_seq
+          FROM server_rows WHERE entity = 'members'
+        ''');
       },
     ),
     beforeOpen: (details) => customStatement('PRAGMA foreign_keys = ON'),

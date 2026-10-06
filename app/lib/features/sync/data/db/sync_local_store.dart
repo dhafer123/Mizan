@@ -7,6 +7,7 @@ import '../../../budget/data/db/budgets_dao.dart';
 import '../../../budget/data/db/income_sources_dao.dart';
 import '../../../expenses/data/db/categories_dao.dart';
 import '../../../expenses/data/db/expenses_dao.dart';
+import '../../../groups/data/db/groups_dao.dart';
 import '../../domain/usecases/rebase_row.dart';
 import '../remote/sync_api.dart';
 import 'sync_payload.dart';
@@ -29,8 +30,13 @@ class AccountChangedException implements Exception {
 ///
 /// Pulled rows bypass the outbox on purpose: they come *from* the server.
 /// Shadows are kept for entities this app version has no table for yet
-/// (group data until week 4), so the migration that adds such a table can
-/// build its rows from them (ADR 0007).
+/// (shared expenses and settlements until 4.2), so the migration that adds
+/// such a table can build its rows from them (ADR 0007).
+///
+/// **Joining a group.** The group's older rows have seqs below the cursor,
+/// so the normal pull never brings them. When a pull shows this account
+/// newly in a group (its own member row), the group is queued in
+/// `group_backfills` and pulled on its own ([applyBackfillPage]).
 class SyncLocalStore {
   SyncLocalStore(this._db);
 
@@ -56,11 +62,73 @@ class SyncLocalStore {
     if (state.accountId != accountId) throw const AccountChangedException();
     var applied = 0;
     for (final change in page.changes) {
+      if (change.entity == GroupsDao.memberEntity) {
+        await _queueBackfillIfJoined(change.state, accountId);
+      }
       if (await _apply(change)) applied++;
     }
     await _db.syncStateDao.saveCursor(page.cursor, now);
     return applied;
   });
+
+  /// Groups still to backfill, with the cursor to resume from.
+  Future<List<GroupBackfill>> pendingBackfills() =>
+      _db.select(_db.groupBackfills).get();
+
+  /// Applies one page of a group's backfill (`/sync/pull?group=`) and moves
+  /// its cursor, or ends it after the last page. The normal pull may have
+  /// brought a newer version of a row already, so an older one is skipped.
+  /// Throws [AccountChangedException].
+  Future<void> applyBackfillPage(
+    String groupId,
+    PullPage page, {
+    required String accountId,
+  }) => _db.transaction(() async {
+    final state = await _db.syncStateDao.read();
+    if (state.accountId != accountId) throw const AccountChangedException();
+    for (final change in page.changes) {
+      final id = change.state['id'];
+      if (change.entity != historyEntity && id is String) {
+        final known = (await _shadow(change.entity, id))?.serverSeq;
+        if (known != null && known >= change.serverSeq) continue;
+      }
+      await _apply(change);
+    }
+    final backfill = _db.groupBackfills;
+    if (page.hasMore) {
+      await (_db.update(backfill)..where((b) => b.groupId.equals(groupId)))
+          .write(GroupBackfillsCompanion(cursor: Value(page.cursor)));
+    } else {
+      await (_db.delete(
+        backfill,
+      )..where((b) => b.groupId.equals(groupId))).go();
+    }
+  });
+
+  /// [member] (a pulled member row) is this account, in its group, and the
+  /// last row seen was not: this account just joined, created the group on
+  /// another phone, or came back. Queue the group's backfill.
+  Future<void> _queueBackfillIfJoined(
+    Map<String, Object?> member,
+    String accountId,
+  ) async {
+    bool mine(Map<String, Object?> row) =>
+        row['userId'] == accountId && row['deleted'] != true;
+    final id = member['id'];
+    final groupId = member['groupId'];
+    if (!mine(member) || id is! String || groupId is! String) return;
+    final before = await _shadow(GroupsDao.memberEntity, id);
+    if (before != null &&
+        mine((jsonDecode(before.state) as Map).cast<String, Object?>())) {
+      return;
+    }
+    await _db
+        .into(_db.groupBackfills)
+        .insert(
+          GroupBackfillsCompanion.insert(groupId: groupId),
+          mode: InsertMode.insertOrIgnore,
+        );
+  }
 
   /// A pushed op for this row left the outbox (accepted or refused). Takes
   /// the server row it came back with, unless the shadow is newer (a
@@ -83,18 +151,20 @@ class SyncLocalStore {
     await _rebuild(entity, entityId);
   }
 
-  Future<int?> _localServerSeq(String entity, String id) async =>
-      switch (entity) {
-        ExpensesDao.entity => (await _db.expensesDao.findById(id))?.serverSeq,
-        CategoriesDao.entity => (await _db.categoriesDao.findById(
-          id,
-        ))?.serverSeq,
-        IncomeSourcesDao.entity => (await _db.incomeSourcesDao.findById(
-          id,
-        ))?.serverSeq,
-        BudgetsDao.entity => (await _db.budgetsDao.findById(id))?.serverSeq,
-        _ => null,
-      };
+  Future<int?> _localServerSeq(
+    String entity,
+    String id,
+  ) async => switch (entity) {
+    ExpensesDao.entity => (await _db.expensesDao.findById(id))?.serverSeq,
+    CategoriesDao.entity => (await _db.categoriesDao.findById(id))?.serverSeq,
+    IncomeSourcesDao.entity => (await _db.incomeSourcesDao.findById(
+      id,
+    ))?.serverSeq,
+    BudgetsDao.entity => (await _db.budgetsDao.findById(id))?.serverSeq,
+    GroupsDao.groupEntity => (await _db.groupsDao.findGroup(id))?.serverSeq,
+    GroupsDao.memberEntity => (await _db.groupsDao.findMember(id))?.serverSeq,
+    _ => null,
+  };
 
   Future<bool> _apply(PulledChange change) async {
     if (change.entity == historyEntity) {
@@ -183,6 +253,24 @@ class SyncLocalStore {
                 serializer: syncSerializer,
               ).toCompanion(false),
             );
+      case GroupsDao.groupEntity:
+        await _db
+            .into(_db.groups)
+            .insertOnConflictUpdate(
+              GroupRow.fromJson(
+                row,
+                serializer: syncSerializer,
+              ).toCompanion(false),
+            );
+      case GroupsDao.memberEntity:
+        await _db
+            .into(_db.members)
+            .insertOnConflictUpdate(
+              MemberRow.fromJson(
+                row,
+                serializer: syncSerializer,
+              ).toCompanion(false),
+            );
       default:
         return false; // No table for it in this app version yet.
     }
@@ -234,6 +322,9 @@ class SyncLocalStore {
         _db.outbox,
         _db.entityHistory,
         _db.serverRows,
+        _db.groups,
+        _db.members,
+        _db.groupBackfills,
       ]) {
         await _db.delete(table).go();
       }

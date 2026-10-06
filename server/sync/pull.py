@@ -19,6 +19,11 @@ must never hold seq N while missing a visible row with a smaller seq:
   the same snapshot. At READ COMMITTED each query would get a fresh one, and a
   commit landing between two queries could put seq 101 on the page but not 100.
 
+**Joining a group** (task 4.1). Rows written to a group before someone
+joined have seqs below that person's cursor, so a normal pull never brings
+them. `group=<id>` pulls just that group's rows, with its own cursor from 0:
+the app runs it once after it learns it joined (3.5's backfill note).
+
 **Pages.** Each source is asked for `limit + 1` rows above the cursor; merged
 by seq, the first `limit` are the page and the extra one says whether more
 remain.
@@ -97,9 +102,26 @@ SOURCES = [
 ]
 
 
-def pull(user, since, limit=DEFAULT_LIMIT):
+# One group's rows only: `pull(group=...)`.
+GROUP_SOURCES = [
+    _spec_source("groups", lambda user, groups: Group.objects.filter(pk__in=groups)),
+    _spec_source("members", lambda user, groups: Member.objects.filter(group_id__in=groups).select_related("group")),
+    _in_groups("shared_expenses"),
+    _in_groups("settlements"),
+    Source(
+        "entity_history",
+        lambda user, groups: EntityHistory.objects.filter(group_id__in=groups),
+        _history_state,
+    ),
+]
+
+
+def pull(user, since, limit=DEFAULT_LIMIT, group=None):
     """`{"changes": [...], "cursor": N, "hasMore": bool}`. Each change is
-    `{"entity", "serverSeq", "state"}`; resume with `since=cursor`."""
+    `{"entity", "serverSeq", "state"}`; resume with `since=cursor`.
+
+    With `group` (an entity id), only that group's rows, and nothing unless
+    the user is an active member of it."""
     # The isolation level can only be set by the statement that starts a
     # transaction. A request always starts one here (ATOMIC_REQUESTS is off);
     # only a caller already inside a transaction (a plain pytest-django test)
@@ -109,8 +131,12 @@ def pull(user, since, limit=DEFAULT_LIMIT):
         if outermost:
             with connection.cursor() as cursor:
                 cursor.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY")
-        groups = list(Group.objects.filter(members__user=user, members__deleted=False, deleted=False).values_list("pk", flat=True))
-        batches = [_fetch(source, user, groups, since, limit + 1) for source in SOURCES]
+        mine = Group.objects.filter(members__user=user, members__deleted=False, deleted=False)
+        if group is not None:
+            mine = mine.filter(entity_id=group)
+        groups = list(mine.values_list("pk", flat=True))
+        sources = SOURCES if group is None else GROUP_SOURCES
+        batches = [_fetch(source, user, groups, since, limit + 1) for source in sources]
 
     merged = list(heapq.merge(*batches, key=lambda change: change["serverSeq"]))
     page = merged[:limit]

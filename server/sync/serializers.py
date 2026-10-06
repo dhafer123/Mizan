@@ -15,3 +15,5 @@ class PushSerializer(serializers.Serializer):
 class PullQuerySerializer(serializers.Serializer):
     since = serializers.IntegerField(min_value=0, default=0)
     limit = serializers.IntegerField(min_value=1, max_value=MAX_LIMIT, default=DEFAULT_LIMIT)
+    # Only this group's rows: the backfill after joining it.
+    group = serializers.CharField(max_length=64, required=False)

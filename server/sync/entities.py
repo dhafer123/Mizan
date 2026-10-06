@@ -100,8 +100,6 @@ class EntitySpec:
     insert_only: bool = False
     deletable: bool = True
     built_ins: dict = field(default_factory=dict)
-    # Groups and members are pulled now but created through push in task 4.1.
-    pushable: bool = True
 
     def read(self, row):
         """A row's values, keyed by JSON field name (Python values)."""
@@ -205,8 +203,16 @@ def _check_settlement(values, ctx):
 
 GROUP_ID = Field("group", REF, immutable=True)
 
-# A user id as the app sees it: an opaque string (like /auth/me's id).
-USER_ID = Codec(clean=lambda value: value, dump=str, nullable=True)
+
+
+def _user_id(value):
+    # A user id as the app sees it: a string (like /auth/me's id).
+    if not isinstance(value, str) or not value.isdigit():
+        raise ValueError("not a user id")
+    return int(value)
+
+
+USER_ID = Codec(clean=_user_id, dump=str, nullable=True)
 
 ENTITIES = {
     spec.name: spec
@@ -272,7 +278,8 @@ ENTITIES = {
                 "name": Field("name", TEXT(60)),
                 "currency": Field("currency", CURRENCY, immutable=True),
             },
-            pushable=False,
+            # Leaving and deleting groups come later; balances must settle first.
+            deletable=False,
         ),
         EntitySpec(
             "members",
@@ -280,11 +287,13 @@ ENTITIES = {
             GROUP,
             {
                 "groupId": GROUP_ID,
-                # Null for a placeholder nobody has claimed yet.
+                # Null for a placeholder nobody has claimed yet. Push only sets
+                # it for the group's founder; others join through an invite.
                 "userId": Field("user_id", USER_ID, required=False),
                 "displayName": Field("display_name", TEXT(50)),
             },
-            pushable=False,
+            # Removing members comes with settling up (their balance must be 0).
+            deletable=False,
         ),
         EntitySpec(
             "shared_expenses",

@@ -8,6 +8,9 @@ import '../../features/budget/presentation/home/home_screen.dart';
 import '../../features/budget/presentation/income/income_screen.dart';
 import '../../features/expenses/presentation/categories/categories_screen.dart';
 import '../../features/expenses/presentation/expense_list/expense_list_screen.dart';
+import '../../features/groups/presentation/group_detail/group_screen.dart';
+import '../../features/groups/presentation/group_list/groups_screen.dart';
+import '../../features/groups/presentation/join/join_group_screen.dart';
 import '../../features/settings/presentation/pin/pin_setup_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 
@@ -24,6 +27,12 @@ abstract final class AppRoutes {
   static const pin = '/settings/pin';
   static const login = '/login';
   static const signUp = '/signup';
+  static const groups = '/groups';
+  static const joinGroup = '/groups/join';
+  static String group(String id) => '/groups/$id';
+
+  /// Invite links (`InviteLink`) open here: `mizan://mizan.app/join/<token>`.
+  static const joinWithToken = '/join/:token';
 }
 
 @Riverpod(keepAlive: true)
@@ -66,6 +75,25 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: AppRoutes.signUp,
         builder: (context, state) => const SignUpScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.groups,
+        builder: (context, state) => const GroupsScreen(),
+      ),
+      // Before `/groups/:id`, which would match it too.
+      GoRoute(
+        path: AppRoutes.joinGroup,
+        builder: (context, state) => const JoinGroupScreen(),
+      ),
+      GoRoute(
+        path: '/groups/:id',
+        builder: (context, state) =>
+            GroupScreen(groupId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: AppRoutes.joinWithToken,
+        builder: (context, state) =>
+            JoinGroupScreen(token: state.pathParameters['token']),
       ),
     ],
   );

@@ -30,6 +30,11 @@ class HomeScreen extends ConsumerWidget {
             tooltip: 'Expenses',
           ),
           IconButton(
+            onPressed: () => context.push(AppRoutes.groups),
+            icon: const Icon(Icons.groups_outlined),
+            tooltip: 'Groups',
+          ),
+          IconButton(
             onPressed: () => context.push(AppRoutes.budget),
             icon: const Icon(Icons.savings_outlined),
             tooltip: 'Budget',

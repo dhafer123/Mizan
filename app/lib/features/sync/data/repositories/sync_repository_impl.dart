@@ -104,8 +104,24 @@ class SyncRepositoryImpl implements SyncRepository {
           now: _clock.now(),
         );
         cursor = page.cursor;
-        if (!page.hasMore) return Ok(applied);
+        if (!page.hasMore) break;
       }
+      // Groups this account just joined: their older rows.
+      for (final backfill in await _store.pendingBackfills()) {
+        var since = backfill.cursor;
+        while (true) {
+          final page = await _api.pull(since: since, groupId: backfill.groupId);
+          await _store.applyBackfillPage(
+            backfill.groupId,
+            page,
+            accountId: accountId,
+          );
+          applied += page.changes.length;
+          since = page.cursor;
+          if (!page.hasMore) break;
+        }
+      }
+      return Ok(applied);
     } on DioException catch (e) {
       return Err(await _fromDio(e));
     } on AccountChangedException {

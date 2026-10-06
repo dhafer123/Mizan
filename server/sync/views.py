@@ -17,4 +17,5 @@ class PullView(APIView):
     def get(self, request):
         query = PullQuerySerializer(data=request.query_params)
         query.is_valid(raise_exception=True)
-        return Response(pull.pull(request.user, query.validated_data["since"], query.validated_data["limit"]))
+        data = query.validated_data
+        return Response(pull.pull(request.user, data["since"], data["limit"], group=data.get("group")))

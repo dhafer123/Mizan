@@ -50,3 +50,26 @@ class Member(SyncedModel):
 
     def __str__(self):
         return self.display_name
+
+
+class GroupInvite(models.Model):
+    """A link or QR that lets someone join a group (task 4.1).
+
+    The token is random and unguessable, expires, and works once. An invite
+    can name a placeholder member: whoever joins with it becomes that member,
+    keeping the placeholder's expenses and balance. Without one, joining adds
+    a new member. Not synced: the app asks the server for invites directly.
+    """
+
+    token = models.CharField(max_length=64, unique=True)
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name="invites")
+    # The placeholder to claim; after a join, the member it made or claimed,
+    # so a retried join gets the same answer.
+    member = models.ForeignKey(Member, null=True, blank=True, on_delete=models.CASCADE, related_name="+")
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="+")
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    used_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.CASCADE, related_name="+"
+    )
+    used_at = models.DateTimeField(null=True, blank=True)

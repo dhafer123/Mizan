@@ -10,6 +10,8 @@ import '../../support/test_database.dart';
 import 'generated/schema.dart';
 import 'generated/schema_v1.dart' as v1;
 import 'generated/schema_v2.dart' as v2;
+import 'generated/schema_v3.dart' as v3;
+import 'generated/schema_v4.dart' as v4;
 
 AppDatabase _open(QueryExecutor executor) => AppDatabase(
   executor,
@@ -94,6 +96,53 @@ void main() {
         expect((state.cursor, state.accountId), (0, null));
         final row = await newDb.select(newDb.entityHistory).getSingle();
         expect((row.field, row.kind), ('amountMinor', 'changed'));
+      },
+    );
+  });
+
+  test('v3 → v4 builds groups and members from their shadows', () async {
+    v3.ServerRowsData shadow(String entity, String id, String state) =>
+        v3.ServerRowsData(
+          entity: entity,
+          entityId: id,
+          state: state,
+          serverSeq: 9,
+        );
+
+    await verifier.testWithDataIntegrity(
+      oldVersion: 3,
+      newVersion: 4,
+      createOld: v3.DatabaseAtV3.new,
+      createNew: v4.DatabaseAtV4.new,
+      openTestedDatabase: _open,
+      createItems: (batch, oldDb) {
+        batch.insertAll(oldDb.serverRows, [
+          shadow(
+            'groups',
+            'g1',
+            '{"id":"g1","name":"Flat 4B","currency":"TND","version":1,'
+                '"deleted":false,"updatedBy":"7","serverSeq":9}',
+          ),
+          shadow(
+            'members',
+            'm1',
+            '{"id":"m1","groupId":"g1","userId":null,"displayName":"Ali",'
+                '"version":2,"deleted":true,"updatedBy":"7","serverSeq":9}',
+          ),
+        ]);
+      },
+      validateItems: (newDb) async {
+        final group = await newDb.select(newDb.groups).getSingle();
+        expect(
+          (group.id, group.name, group.currency, group.version, group.deleted),
+          ('g1', 'Flat 4B', 'TND', 1, 0),
+        );
+        expect((group.updatedBy, group.serverSeq), ('7', 9));
+        final member = await newDb.select(newDb.members).getSingle();
+        expect(
+          (member.groupId, member.userId, member.displayName, member.deleted),
+          ('g1', null, 'Ali', 1),
+        );
       },
     );
   });

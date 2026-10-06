@@ -15,7 +15,7 @@ void main() {
       row.read<String>('name'),
   ];
 
-  test('creates every table at schema version 3', () async {
+  test('creates every table at schema version 4', () async {
     final tables = await db
         .customSelect(
           "SELECT name FROM sqlite_master WHERE type = 'table' "
@@ -24,14 +24,17 @@ void main() {
         .map((row) => row.read<String>('name'))
         .get();
 
-    expect(db.schemaVersion, 3);
+    expect(db.schemaVersion, 4);
     expect(tables, [
       'budget_category_limits',
       'budgets',
       'categories',
       'entity_history',
       'expenses',
+      'group_backfills',
+      'groups',
       'income_sources',
+      'members',
       'outbox',
       'server_rows',
       'sync_state',
@@ -45,6 +48,8 @@ void main() {
       'income_sources',
       'budgets',
       'budget_category_limits',
+      'groups',
+      'members',
     ]) {
       expect(
         await columns(table),
@@ -55,7 +60,12 @@ void main() {
   });
 
   test('local-only tables do not', () async {
-    for (final table in ['outbox', 'sync_state', 'entity_history']) {
+    for (final table in [
+      'outbox',
+      'sync_state',
+      'entity_history',
+      'group_backfills',
+    ]) {
       expect(await columns(table), isNot(contains('deleted')), reason: table);
     }
   });

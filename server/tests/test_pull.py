@@ -1,7 +1,6 @@
 """`/sync/pull`: scope (nothing leaks), tombstones, and page boundaries."""
 
 import threading
-import uuid
 
 import pytest
 from django.db import connection, transaction
@@ -260,12 +259,6 @@ def test_bad_queries(user, query):
 
 def test_pull_needs_a_signed_in_user(client):
     assert client.get("/sync/pull").status_code == 401
-
-
-def test_groups_and_members_are_not_pushable_yet(user):
-    result = Device(user).one(op("groups", str(uuid.uuid4()), "create", 0, name="Flat", currency="TND"))
-
-    assert result["reason"] == "unknown_entity"
 
 
 # --- No gaps under concurrent writes ---

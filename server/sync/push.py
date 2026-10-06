@@ -20,6 +20,10 @@ For each op:
    | delete after (or during) an edit      | deleted (delete wins)                      |
    | settlement update/delete              | rejected `insert_only`                     |
    | group op from a removed member        | rejected `not_a_member`                    |
+   | member op setting someone's userId    | rejected `invalid_field` (join instead)    |
+
+Anyone may create a group. Its creator then adds themselves as its first
+member (the founder); everyone else joins through an invite (groups app).
 
 "Concurrent" means changed by *another device* since the op's baseVersion.
 A device's own earlier ops are not conflicts: the app keeps its local
@@ -163,11 +167,13 @@ def _parse(raw, device_id):
 
 def _apply(user, op):
     spec = ENTITIES.get(op.entity)
-    if spec is None or not spec.pushable:
+    if spec is None:
         raise Rejected("unknown_entity")
 
-    row, group = _find(user, spec, op)
+    row, group, founder = _find(user, spec, op)
     incoming = _clean(spec, op, row)
+    if spec.model is Member:
+        _check_user_id(user, spec, row, incoming, founder)
     ctx = Context(user=user, row_id=op.entity_id, group=group, changed=frozenset(incoming))
 
     if op.op_type == "delete":
@@ -184,13 +190,19 @@ def _apply(user, op):
 
 
 def _find(user, spec, op):
-    """The row (or None) and its group, after the permission check."""
+    """The row (or None), its group, and whether the op adds the group's
+    founder, after the permission check."""
     if spec.scope != GROUP:
         row = spec.model.objects.filter(owner=user, entity_id=op.entity_id).first()
-        return row, None
+        return row, None, False
 
-    row = spec.model.objects.filter(entity_id=op.entity_id).select_related("group").first()
-    if row is not None:
+    if spec.model is Group:
+        row = group = Group.objects.filter(entity_id=op.entity_id).first()
+        if row is None:
+            if op.op_type != "create":
+                raise Rejected("not_found")
+            return None, None, False  # Anyone may create a group.
+    elif (row := spec.model.objects.filter(entity_id=op.entity_id).select_related("group").first()) is not None:
         group = row.group
     else:
         group_id = op.changed.get("groupId")
@@ -198,9 +210,37 @@ def _find(user, spec, op):
         if group is None:
             # Don't reveal whether the group exists.
             raise Rejected("not_a_member" if op.op_type == "create" else "not_found")
-    if group.deleted or not Member.objects.filter(group=group, user=user, deleted=False).exists():
+    if group.deleted:
         raise Rejected("not_a_member")
-    return row, group
+    if Member.objects.filter(group=group, user=user, deleted=False).exists():
+        return row, group, False
+    if _adds_founder(user, spec, op, row, group):
+        return row, group, True
+    raise Rejected("not_a_member")
+
+
+def _adds_founder(user, spec, op, row, group):
+    """The group's creator adding their own first member row: the one way
+    into a group without an invite."""
+    return (
+        spec.model is Member
+        and op.op_type == "create"
+        and row is None
+        and group.created_by_id == user.pk
+        and not Member.objects.filter(group=group, user__isnull=False).exists()
+    )
+
+
+def _check_user_id(user, spec, row, incoming, founder):
+    """A member's user is set by joining (groups app), never by push, except
+    for the founder's own row. Re-sending the current value is fine."""
+    if "userId" not in incoming:
+        if founder:
+            raise Rejected("missing_field", "userId")
+        return
+    wanted = user.pk if founder else (spec.read(row)["userId"] if row else None)
+    if incoming["userId"] != wanted:
+        raise Rejected("invalid_field", "userId")
 
 
 def _clean(spec, op, row):
@@ -249,6 +289,8 @@ def _new_row(user, spec, op, ctx):
     row = spec.model(entity_id=op.entity_id)
     if spec.scope != GROUP:
         row.owner = user
+    elif spec.model is Group:
+        row.created_by = user
     else:
         row.group = ctx.group
     return row
@@ -261,6 +303,8 @@ def _create(user, spec, op, incoming, ctx):
     spec.write(row, values, ctx)
     row.updated_by = user
     row.save()
+    if spec.model is Group:
+        ctx.group = row  # A group's history lives in its own scope.
     _history(user, spec, op, row, ctx, EntityHistory.Kind.CREATED)
     return APPLIED, spec.state(row)
 

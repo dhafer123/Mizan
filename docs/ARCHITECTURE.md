@@ -137,6 +137,7 @@ All synced entities also carry the sync metadata: `version`, `deleted` (tombston
   - `sync_state`: `cursor` (last `serverSeq` pulled), `lastSyncAt`.
   - `entity_history`: change log shown in the UI ("Ali changed amount 120 → 150").
   - `server_rows`: each synced row as the server last sent it. The row the UI shows is that plus the still-queued outbox ops, rebuilt whenever either changes (ADR 0008).
+  - `group_backfills`: groups this account just joined whose older rows still need a group-scoped pull (ADR 0009).
 - Every user action runs in **one transaction**: write the entity **and** append to the outbox. This is the core offline-first guarantee: no change is ever made without being queued for sync.
 - Balances and totals are **never stored**. They are computed from rows (and cached in memory if needed).
 
@@ -183,6 +184,7 @@ It returns a result per op: `applied` / `merged` / `rejected` (with a reason) an
 - A member removed from a group still gets their own member row (as a tombstone), then nothing more from that group.
 - The client applies the changes in one transaction, then **re-applies pending outbox ops on top** (rebase), so local unsynced edits stay visible.
 - The client stores the new cursor.
+- **Joining a group:** the group's older rows sit below the joiner's cursor. `GET /sync/pull?group=<id>&since=<n>` returns only that group's rows, to active members. The app runs it from 0 once it pulls its own new member row (ADR 0009).
 
 ### When sync runs
 On app start, when coming back online (connectivity listener), after a local write (debounced 2 s), when an FCM "data changed" push arrives, and periodically with WorkManager. Failures retry with exponential backoff.
@@ -229,7 +231,7 @@ receipt ─► OCR (ML Kit) ──┘
 | `accounts` | Sign-up and login (email + password), JWT access and refresh (simplejwt), devices (FCM tokens) |
 | `ledger` | Server-side models mirroring synced entities, plus `version`, `server_seq`, `deleted` |
 | `sync` | `/sync/push`, `/sync/pull`, applied-op log, conflict policy, history |
-| `groups` | Groups, members, invite tokens (link / QR, expiring), placeholder claiming |
+| `groups` | Invite tokens (link / QR, single-use, 7 days), joining, placeholder claiming. Groups and members themselves sync through push (ADR 0009) |
 | `notifications` | FCM pushes: "new shared expense", "you were added to a group", settle-up reminders |
 
 - PostgreSQL, with Docker Compose for local development.

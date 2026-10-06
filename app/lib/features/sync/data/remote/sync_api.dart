@@ -79,10 +79,16 @@ class SyncApi {
     ];
   }
 
-  Future<PullPage> pull({required int since, int limit = maxOps}) async {
+  /// Changes since [since]. With [groupId], only that group's rows: the
+  /// backfill after joining it.
+  Future<PullPage> pull({
+    required int since,
+    int limit = maxOps,
+    String? groupId,
+  }) async {
     final response = await _dio.get<Object?>(
       pullPath,
-      queryParameters: {'since': since, 'limit': limit},
+      queryParameters: {'since': since, 'limit': limit, 'group': ?groupId},
     );
     return switch (response.data) {
       {
