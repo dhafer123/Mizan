@@ -33,7 +33,8 @@ if not SECRET_KEY:
         raise ImproperlyConfigured("Set DJANGO_SECRET_KEY (or DJANGO_DEBUG=1 for local development).")
     SECRET_KEY = "django-insecure-local-development-only"
 
-ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1" if DEBUG else "")
+# 10.0.2.2 is this machine as seen from the Android emulator.
+ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,10.0.2.2" if DEBUG else "")
 
 INSTALLED_APPS = [
     "django.contrib.contenttypes",

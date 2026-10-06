@@ -34,6 +34,28 @@ curl localhost:8000/health # {"status":"ok"}
 
 If a local Postgres already uses port 5432, set `POSTGRES_PORT` in `.env` (e.g. 5433).
 
+## Run the API on the host (no Docker)
+
+Settings come only from environment variables. Without `DJANGO_SECRET_KEY`,
+the server refuses to start unless `DJANGO_DEBUG=1` (which uses a dev-only key).
+
+```powershell
+# PowerShell, from server/ (the variable lasts for this terminal)
+$env:DJANGO_DEBUG = "1"
+.venv\Scripts\python manage.py migrate
+.venv\Scripts\python manage.py runserver 0.0.0.0:8000
+```
+
+```bash
+# bash
+DJANGO_DEBUG=1 .venv/Scripts/python manage.py runserver 0.0.0.0:8000
+```
+
+The Android emulator reaches it at `http://10.0.2.2:8000`, which debug mode
+allows by default. For a real phone on the same Wi-Fi, also allow your PC's
+LAN IP, e.g. `$env:DJANGO_ALLOWED_HOSTS = "localhost,127.0.0.1,10.0.2.2,192.168.1.20"`,
+and run the app with `--dart-define=MIZAN_API_URL=http://192.168.1.20:8000`.
+
 ## Run tests on the host
 
 Postgres must be reachable with the `POSTGRES_*` settings: either `docker compose up -d db`, or a
