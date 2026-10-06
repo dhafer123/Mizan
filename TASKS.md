@@ -74,10 +74,10 @@ The money and group logic is built and proven first, with no UI, because everyth
 
 ## Week 3 (Oct 20–26): server, auth and sync
 
-- [ ] **3.1 Django project + Docker** (§9)
+- [x] **3.1 Django project + Docker** (§9)
   Apps `accounts`, `ledger`, `sync`, `groups`, `notifications`. Postgres in Docker Compose, pytest-django, and server tests in CI.
   *Done when:* `docker compose up` runs, and an empty pytest suite is green in CI.
-  *Note:* Django 6.1 / DRF 3.18 / psycopg 3 on Python 3.12, Postgres 18. Custom `accounts.User` created now (before the first migration) so 3.2 can switch to email login. API-only (no admin/sessions); DRF is JSON-only and `IsAuthenticated` by default. `GET /health` checks the DB. CI's `compose` job runs `docker compose up --wait` and curls `/health`.
+  *Note:* Django 6.1 / DRF 3.18 / psycopg 3 on Python 3.12, Postgres 18. Custom `accounts.User` created now (before the first migration) so 3.2 can switch to email login. API-only (no admin/sessions); DRF is JSON-only and `IsAuthenticated` by default. `GET /health` checks the DB. CI's `compose` job runs `docker compose up --wait` and curls `/health`. Verified: run 37441649129 (test + compose green).
 
 - [ ] **3.2 Auth**
   Email + password sign-up and login, simplejwt access and refresh tokens, and a devices table. App side: login and sign-up screens, a dio interceptor for refresh, tokens in secure storage. The app stays usable offline before the first login (local-only mode).
