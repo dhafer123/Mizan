@@ -101,6 +101,63 @@ class GroupsDao extends DatabaseAccessor<AppDatabase> with _$GroupsDaoMixin {
     }
   }
 
+  /// Every live group with its live members, expenses and settlements, read
+  /// together whenever any of those tables changes.
+  Stream<
+    List<
+      (GroupRow, List<MemberRow>, List<SharedExpenseRow>, List<SettlementRow>)
+    >
+  >
+  watchEverything() async* {
+    final db = attachedDatabase;
+    Future<
+      List<
+        (GroupRow, List<MemberRow>, List<SharedExpenseRow>, List<SettlementRow>)
+      >
+    >
+    read() => transaction(() async {
+      final all = await (select(groups)..where((g) => g.deleted.not())).get();
+      final people = await (select(
+        members,
+      )..where((m) => m.deleted.not())).get();
+      final spent = await (select(
+        db.sharedExpenses,
+      )..where((e) => e.deleted.not())).get();
+      final paid = await (select(
+        db.settlements,
+      )..where((s) => s.deleted.not())).get();
+      return [
+        for (final g in all)
+          (
+            g,
+            [
+              for (final m in people)
+                if (m.groupId == g.id) m,
+            ],
+            [
+              for (final e in spent)
+                if (e.groupId == g.id) e,
+            ],
+            [
+              for (final s in paid)
+                if (s.groupId == g.id) s,
+            ],
+          ),
+      ];
+    });
+    yield await read();
+    await for (final _ in db.tableUpdates(
+      TableUpdateQuery.onAllTables([
+        groups,
+        members,
+        db.sharedExpenses,
+        db.settlements,
+      ]),
+    )) {
+      yield await read();
+    }
+  }
+
   /// The most history rows shown for one group.
   static const historyLimit = 300;
 

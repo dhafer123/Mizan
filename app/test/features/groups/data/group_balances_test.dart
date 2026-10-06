@@ -115,4 +115,30 @@ void main() {
 
     expect(entries.map((e) => e.id), ['h2', 'h1']);
   });
+
+  test('all groups come with their own members and money rows', () async {
+    await db.groupsDao.insertGroup(_group('trip'), _member('nour', 'trip'));
+    await AddSharedExpense(
+      repo,
+      SequentialIdGenerator(prefix: 'e'),
+      FakeClock(DateTime.utc(2026, 10, 6)),
+    )(
+      groupId: 'trip',
+      payerId: 'nour',
+      amount: const Money(9000, Currency.tnd),
+      split: const Split.equal({'nour'}),
+    );
+
+    final groups = (await repo.watchAllGroups().first).valueOrNull!;
+    final byId = {for (final g in groups) g.group.id: g};
+
+    expect(byId.keys.toSet(), {'flat', 'trip'});
+    expect(byId['flat']!.members.map((m) => m.id).toSet(), {
+      'you',
+      'ali',
+      'sami',
+    });
+    expect(byId['flat']!.ledger.expenses, isEmpty);
+    expect(byId['trip']!.ledger.expenses.single.payerId, 'nour');
+  });
 }

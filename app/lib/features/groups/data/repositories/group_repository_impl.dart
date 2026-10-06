@@ -13,6 +13,7 @@ import '../../domain/value_objects/group_error.dart';
 import '../../domain/value_objects/group_failure.dart';
 import '../../domain/value_objects/group_invite.dart';
 import '../../domain/value_objects/group_ledger.dart';
+import '../../domain/value_objects/group_snapshot.dart';
 import '../../domain/value_objects/invite_preview.dart';
 import '../db/groups_dao.dart';
 import '../db/settlements_dao.dart';
@@ -123,6 +124,21 @@ class GroupRepositoryImpl implements GroupRepository {
     expenses: [for (final row in rows.$1) SharedExpenseMapper.toDomain(row)],
     settlements: [for (final row in rows.$2) SettlementMapper.toDomain(row)],
   );
+
+  @override
+  Stream<Result<List<GroupSnapshot>, GroupFailure>> watchAllGroups() => _dao
+      .watchEverything()
+      .map<Result<List<GroupSnapshot>, GroupFailure>>(
+        (groups) => Ok([
+          for (final (group, members, expenses, settlements) in groups)
+            GroupSnapshot(
+              group: GroupMapper.toDomain(group),
+              members: [for (final m in members) GroupMapper.memberToDomain(m)],
+              ledger: _ledger((expenses, settlements)),
+            ),
+        ]),
+      )
+      .transform(storageErrorsAsFailures(_storage));
 
   @override
   Future<Result<void, GroupFailure>> addSettlement(Settlement settlement) =>

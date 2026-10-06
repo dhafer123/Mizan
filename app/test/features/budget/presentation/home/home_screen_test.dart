@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mizan/app/di/auth_providers.dart';
 import 'package:mizan/app/di/budget_providers.dart';
 import 'package:mizan/app/di/core_providers.dart';
 import 'package:mizan/app/di/expenses_providers.dart';
+import 'package:mizan/app/di/groups_providers.dart';
 import 'package:mizan/core/clock/fake_clock.dart';
 import 'package:mizan/core/clock/year_month.dart';
 import 'package:mizan/core/money/currency.dart';
@@ -17,9 +19,11 @@ import 'package:mizan/features/budget/presentation/home/home_screen.dart';
 import 'package:mizan/features/expenses/domain/entities/default_categories.dart';
 import 'package:mizan/features/expenses/domain/entities/expense.dart';
 
+import '../../../../support/fake_auth_repository.dart';
 import '../../../../support/fake_budget_repository.dart';
 import '../../../../support/fake_category_repository.dart';
 import '../../../../support/fake_expense_repository.dart';
+import '../../../../support/fake_group_repository.dart';
 import '../../../../support/fake_income_source_repository.dart';
 import '../../../../support/sequential_id_generator.dart';
 
@@ -105,6 +109,8 @@ Future<void> _pump(WidgetTester tester, _Repos repos) async {
         categoryRepositoryProvider.overrideWithValue(repos.categories),
         budgetRepositoryProvider.overrideWithValue(repos.budgets),
         incomeSourceRepositoryProvider.overrideWithValue(repos.incomes),
+        groupRepositoryProvider.overrideWithValue(FakeGroupRepository()),
+        authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
       ],
       child: const MaterialApp(home: HomeScreen()),
     ),

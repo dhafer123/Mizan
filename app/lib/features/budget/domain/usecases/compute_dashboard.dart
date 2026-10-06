@@ -4,6 +4,7 @@ import '../../../../core/money/currency.dart';
 import '../../../../core/money/money.dart';
 import '../../../expenses/domain/entities/category.dart';
 import '../../../expenses/domain/entities/expense.dart';
+import '../../../groups/domain/value_objects/my_group_money.dart';
 import '../entities/budget.dart';
 import '../entities/income_source.dart';
 import '../value_objects/category_budget.dart';
@@ -39,14 +40,19 @@ class ComputeDashboard {
     /// The current month's, and any earlier ones to fill [Dashboard.recent]
     /// at the start of a month.
     required List<Expense> expenses,
+
+    /// My groups: my shares count as spending; what's owed is shown apart.
+    MyGroupMoney? groups,
   }) {
     final month = YearMonth.of(today);
+    final shares = groups?.shares ?? const [];
     final overview = _overview(
       month: month,
       currency: currency,
       budgets: budgets,
       categories: categories,
       expenses: expenses,
+      shares: shares,
     );
     final available = _available(
       month: month,
@@ -54,6 +60,7 @@ class ComputeDashboard {
       incomes: incomes,
       expenses: expenses,
       today: today,
+      shares: shares,
     );
 
     final spending = overview.categories.where((l) => l.spent.isPositive);
@@ -79,6 +86,8 @@ class ComputeDashboard {
         currency,
       ),
       recent: List.unmodifiable(recent.take(recentCount)),
+      owedToMe: groups?.owedToMe,
+      iOwe: groups?.iOwe,
     );
   }
 

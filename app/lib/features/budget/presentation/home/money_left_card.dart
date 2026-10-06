@@ -46,6 +46,19 @@ class MoneyLeftCard extends StatelessWidget {
               '${_money.format(available.spent)} spent',
               style: theme.textTheme.bodyMedium,
             ),
+            // Group money: not spending and not part of the money left.
+            if (dashboard.owedToMe case final owed? when owed.isPositive)
+              Text(
+                'Owed to you in groups: ${_money.format(owed)}',
+                key: const ValueKey('owedToMe'),
+                style: theme.textTheme.bodyMedium,
+              ),
+            if (dashboard.iOwe case final owe? when owe.isPositive)
+              Text(
+                'You owe in groups: ${_money.format(owe)}',
+                key: const ValueKey('iOwe'),
+                style: theme.textTheme.bodyMedium,
+              ),
             if (overview.totalLimit case final limit? when budgetLeft != null)
               Padding(
                 padding: const EdgeInsets.only(top: 4),

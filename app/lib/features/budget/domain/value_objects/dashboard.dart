@@ -29,8 +29,13 @@ abstract class Dashboard with _$Dashboard {
     /// the month's spending.
     required Money otherSpent,
 
-    /// The newest expenses, newest first.
+    /// The newest personal expenses, newest first.
     required List<Expense> recent,
+
+    /// What others owe me in my groups, and what I owe: not spending, and
+    /// not part of the money left. Null when signed out of groups.
+    Money? owedToMe,
+    Money? iOwe,
   }) = _Dashboard;
 
   const Dashboard._();

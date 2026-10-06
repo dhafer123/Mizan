@@ -1,8 +1,10 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../app/di/core_providers.dart';
 import '../../../../app/di/groups_providers.dart';
 import '../../../../core/result/failure.dart';
 import '../../../../core/result/result.dart';
+import '../../../auth/presentation/account_provider.dart';
 import '../../../expenses/presentation/shared/no_retry.dart';
 import '../../domain/entities/group.dart';
 import '../../domain/entities/history_entry.dart';
@@ -12,6 +14,7 @@ import '../../domain/value_objects/group_balances.dart';
 import '../../domain/value_objects/group_invite.dart';
 import '../../domain/value_objects/group_ledger.dart';
 import '../../domain/value_objects/invite_preview.dart';
+import '../../domain/value_objects/my_group_money.dart';
 import '../../domain/value_objects/transfer.dart';
 
 part 'group_data_providers.g.dart';
@@ -66,6 +69,19 @@ Stream<GroupLedger> groupLedger(Ref ref, String groupId) =>
 Future<List<Transfer>> suggestedTransfers(Ref ref, String groupId) async {
   final balances = await ref.watch(groupBalancesProvider(groupId).future);
   return _orThrow(ref.watch(simplifyDebtsProvider)(balances.byMember));
+}
+
+/// My shares of group expenses (my spending) and what's owed, for the
+/// budget and home screens. Empty when signed out.
+@Riverpod(retry: noRetry)
+Stream<MyGroupMoney> myGroupMoney(Ref ref) async* {
+  final account = await ref.watch(accountProvider.future);
+  yield* ref
+      .watch(watchMyGroupMoneyProvider)(
+        accountId: account?.id,
+        currency: ref.watch(appCurrencyProvider),
+      )
+      .map(_orThrow);
 }
 
 /// Who changed what, newest first.

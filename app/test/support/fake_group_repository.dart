@@ -9,6 +9,7 @@ import 'package:mizan/features/groups/domain/value_objects/group_error.dart';
 import 'package:mizan/features/groups/domain/value_objects/group_failure.dart';
 import 'package:mizan/features/groups/domain/value_objects/group_invite.dart';
 import 'package:mizan/features/groups/domain/value_objects/group_ledger.dart';
+import 'package:mizan/features/groups/domain/value_objects/group_snapshot.dart';
 import 'package:mizan/features/groups/domain/value_objects/invite_preview.dart';
 
 /// Groups in memory. Server calls answer [joinResult] and record their token.
@@ -66,6 +67,19 @@ class FakeGroupRepository implements GroupRepository {
   @override
   Future<Result<GroupLedger, GroupFailure>> getLedger(String groupId) async =>
       Ok(_ledger(groupId));
+
+  @override
+  Stream<Result<List<GroupSnapshot>, GroupFailure>> watchAllGroups() =>
+      Stream.value(
+        Ok([
+          for (final g in groups)
+            GroupSnapshot(
+              group: g,
+              members: members.where((m) => m.groupId == g.id).toList(),
+              ledger: _ledger(g.id),
+            ),
+        ]),
+      );
 
   @override
   Future<Result<void, GroupFailure>> addSettlement(

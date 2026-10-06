@@ -135,9 +135,10 @@ The money and group logic is built and proven first, with no UI, because everyth
   *Done when:* recording all the suggested payments brings every balance to 0 on both devices.
   *Note:* "Settle up" tab: suggested payments (each "Record", amount editable for partial payments), any other payment, and the payment list with "Undo" (a reversing settlement; a payment is undone once, a reversal can't be undone). Schema v6 adds `settlements` (from shadows); balances now come from expenses + settlements. Proven by `test_e2e/join_group_e2e_test.dart` on a real server (all balances 0 on both phones). Sync fix: a create the server refuses and never stored (e.g. two phones undoing the same payment offline → `already_reversed`) is now removed locally; the simulation (now recording/undoing payments on phones) failed without it. See ADR 0008 addendum.
 
-- [ ] **4.5 Personal budget integration** (§4)
+- [x] **4.5 Personal budget integration** (§4)
   Only **my share** counts as spending. What others owe me is shown separately.
   *Done when:* a test shows that paying 900 rent for 3 adds 300 to my spending and 600 to "owed to me".
+  *Note:* `WatchMyGroupMoney` gives my share of every shared expense (spending, in the expense's category; none → "Other") plus "owed to me" / "I owe" from current group balances (all-time, not monthly). Budget overview, money available and the dashboard add the shares; owed/owe show apart on Home and Budget and never change money left. Groups in another currency than the app's are left out. Test: `test/features/groups/domain/usecases/watch_my_group_money_test.dart`.
 
 - [ ] **4.6 Push notifications (FCM)**
   New shared expense, added to a group, and a weekly settle-up reminder. A "data changed" push triggers a sync.

@@ -7,6 +7,7 @@ import '../../../../core/clock/year_month.dart';
 import '../../../expenses/presentation/expense_list/month_expenses_provider.dart';
 import '../../../expenses/presentation/shared/categories_provider.dart';
 import '../../../expenses/presentation/shared/no_retry.dart';
+import '../../../groups/presentation/shared/group_data_providers.dart';
 import '../../domain/value_objects/dashboard.dart';
 import '../budget/budget_providers.dart';
 
@@ -27,6 +28,7 @@ Future<Dashboard> dashboard(Ref ref) async {
   );
   final budgets = await ref.watch(budgetsProvider.future);
   final incomes = await ref.watch(incomeSourcesProvider.future);
+  final groups = await ref.watch(myGroupMoneyProvider.future);
 
   return ref.watch(computeDashboardProvider)(
     today: today,
@@ -37,6 +39,7 @@ Future<Dashboard> dashboard(Ref ref) async {
     expenses: [
       for (final day in [...thisMonth, ...lastMonth]) ...day.expenses,
     ],
+    groups: groups,
   );
 }
 
@@ -50,5 +53,6 @@ void retryDashboard(WidgetRef ref) {
     ..invalidate(monthExpensesProvider(month.previous))
     ..invalidate(budgetsProvider)
     ..invalidate(incomeSourcesProvider)
+    ..invalidate(myGroupMoneyProvider)
     ..invalidate(dashboardProvider);
 }

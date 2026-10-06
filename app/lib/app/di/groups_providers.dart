@@ -19,6 +19,7 @@ import '../../features/groups/domain/usecases/watch_group_history.dart';
 import '../../features/groups/domain/usecases/watch_group_ledger.dart';
 import '../../features/groups/domain/usecases/watch_groups.dart';
 import '../../features/groups/domain/usecases/watch_members.dart';
+import '../../features/groups/domain/usecases/watch_my_group_money.dart';
 import '../../features/groups/domain/usecases/watch_shared_expenses.dart';
 import 'auth_providers.dart';
 import 'core_providers.dart';
@@ -113,3 +114,7 @@ ReverseSettlement reverseSettlement(Ref ref) => ReverseSettlement(
 @Riverpod(keepAlive: true)
 WatchGroupLedger watchGroupLedger(Ref ref) =>
     WatchGroupLedger(ref.watch(groupRepositoryProvider));
+
+@Riverpod(keepAlive: true)
+WatchMyGroupMoney watchMyGroupMoney(Ref ref) =>
+    WatchMyGroupMoney(ref.watch(groupRepositoryProvider));

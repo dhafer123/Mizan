@@ -7,6 +7,7 @@ import '../entities/shared_expense.dart';
 import '../value_objects/group_failure.dart';
 import '../value_objects/group_invite.dart';
 import '../value_objects/group_ledger.dart';
+import '../value_objects/group_snapshot.dart';
 import '../value_objects/invite_preview.dart';
 
 /// Groups and members on this device (written offline, queued for sync),
@@ -40,6 +41,10 @@ abstract interface class GroupRepository {
 
   /// [watchLedger], read once.
   Future<Result<GroupLedger, GroupFailure>> getLedger(String groupId);
+
+  /// Every group on this phone with its members and money rows,
+  /// re-emitted when any of them changes.
+  Stream<Result<List<GroupSnapshot>, GroupFailure>> watchAllGroups();
 
   /// Settlements are insert-only: there is no update or delete.
   Future<Result<void, GroupFailure>> addSettlement(Settlement settlement);

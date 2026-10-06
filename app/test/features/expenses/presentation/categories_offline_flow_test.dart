@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mizan/app/di/auth_providers.dart';
 import 'package:mizan/app/di/core_providers.dart';
 import 'package:mizan/app/di/database_providers.dart';
 import 'package:mizan/app/di/settings_providers.dart';
@@ -10,6 +11,7 @@ import 'package:mizan/app/mizan_app.dart';
 import 'package:mizan/core/clock/fake_clock.dart';
 import 'package:mizan/features/sync/data/db/outbox_op_type.dart';
 
+import '../../../support/fake_auth_repository.dart';
 import '../../../support/fake_biometric_authenticator.dart';
 import '../../../support/fake_lock_settings_repository.dart';
 import '../../../support/sequential_id_generator.dart';
@@ -30,6 +32,7 @@ void main() {
         overrides: [
           clockProvider.overrideWithValue(clock),
           idGeneratorProvider.overrideWithValue(ids),
+          authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
           appDatabaseProvider.overrideWithValue(db),
           lockSettingsRepositoryProvider.overrideWithValue(
             FakeLockSettingsRepository(),

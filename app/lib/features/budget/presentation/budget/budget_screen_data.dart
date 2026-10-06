@@ -1,3 +1,4 @@
+import '../../../../core/money/money.dart';
 import '../../domain/value_objects/budget_overview.dart';
 import '../../domain/value_objects/money_available.dart';
 
@@ -8,6 +9,8 @@ class BudgetScreenData {
     required this.available,
     required this.hasIncome,
     required this.isCurrentMonth,
+    required this.owedToMe,
+    required this.iOwe,
   });
 
   final BudgetOverview overview;
@@ -18,4 +21,9 @@ class BudgetScreenData {
 
   /// The next income is only shown for the current month.
   final bool isCurrentMonth;
+
+  /// Where I stand in my groups now (not this month's): shown apart, not
+  /// spending and not income.
+  final Money owedToMe;
+  final Money iOwe;
 }

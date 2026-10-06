@@ -2,7 +2,9 @@ import '../../../../core/clock/year_month.dart';
 import '../../../../core/money/currency.dart';
 import '../../../../core/money/money.dart';
 import '../../../expenses/domain/entities/category.dart';
+import '../../../expenses/domain/entities/default_categories.dart';
 import '../../../expenses/domain/entities/expense.dart';
+import '../../../groups/domain/value_objects/group_share.dart';
 import '../entities/budget.dart';
 import '../value_objects/budget_overview.dart';
 import '../value_objects/category_budget.dart';
@@ -16,6 +18,8 @@ import '../value_objects/category_budget.dart';
 ///   with spending this month, then one line (category null) for spending
 ///   under categories this device doesn't know. Their spending adds up to
 ///   the month's total.
+/// - Spending is personal expenses plus my share of shared expenses
+///   ([shares]); a share without a category counts as "Other".
 class ComputeBudgetOverview {
   const ComputeBudgetOverview();
 
@@ -27,14 +31,22 @@ class ComputeBudgetOverview {
 
     /// May include other months; only [month]'s count.
     required List<Expense> expenses,
+
+    /// My shares of group expenses; only [month]'s count.
+    List<GroupShare> shares = const [],
   }) {
     final zero = Money.zero(currency);
-    final inMonth = expenses.where((e) => month.contains(e.date)).toList();
+    final inMonth = [
+      for (final e in expenses)
+        if (month.contains(e.date)) (e.categoryId, e.amount),
+      for (final s in shares)
+        if (month.contains(s.date))
+          (s.categoryId ?? DefaultCategories.other.id, s.amount),
+    ];
 
     final spentBy = <String, Money>{};
-    for (final expense in inMonth) {
-      spentBy[expense.categoryId] =
-          (spentBy[expense.categoryId] ?? zero) + expense.amount;
+    for (final (categoryId, amount) in inMonth) {
+      spentBy[categoryId] = (spentBy[categoryId] ?? zero) + amount;
     }
 
     final known = {for (final c in categories) c.id};
@@ -59,7 +71,7 @@ class ComputeBudgetOverview {
 
     return BudgetOverview(
       month: month,
-      spent: Money.sum(inMonth.map((e) => e.amount), currency),
+      spent: Money.sum(inMonth.map((e) => e.$2), currency),
       totalLimit: budgetFor(month, budgets)?.totalLimit,
       categories: List.unmodifiable(lines),
     );

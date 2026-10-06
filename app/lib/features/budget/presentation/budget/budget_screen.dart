@@ -125,6 +125,19 @@ class _AvailableCard extends ConsumerWidget {
             const SizedBox(height: 8),
             _AmountRow(label: 'Income', amount: available.income),
             _AmountRow(label: 'Spent', amount: available.spent),
+            // Group money: not spending, not income. Shown apart.
+            if (data.owedToMe.isPositive)
+              _AmountRow(
+                key: const ValueKey('owedToMe'),
+                label: 'Owed to you (groups)',
+                amount: data.owedToMe,
+              ),
+            if (data.iOwe.isPositive)
+              _AmountRow(
+                key: const ValueKey('iOwe'),
+                label: 'You owe (groups)',
+                amount: data.iOwe,
+              ),
             if (data.isCurrentMonth && next != null) ...[
               const SizedBox(height: 8),
               Text(
@@ -170,7 +183,7 @@ class _AvailableCard extends ConsumerWidget {
 }
 
 class _AmountRow extends StatelessWidget {
-  const _AmountRow({required this.label, required this.amount});
+  const _AmountRow({required this.label, required this.amount, super.key});
 
   final String label;
   final Money amount;

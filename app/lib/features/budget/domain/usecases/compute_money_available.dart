@@ -3,13 +3,15 @@ import '../../../../core/clock/year_month.dart';
 import '../../../../core/money/currency.dart';
 import '../../../../core/money/money.dart';
 import '../../../expenses/domain/entities/expense.dart';
+import '../../../groups/domain/value_objects/group_share.dart';
 import '../entities/income_source.dart';
 import '../value_objects/income_schedule.dart';
 import '../value_objects/money_available.dart';
 import '../value_objects/next_income.dart';
 
-/// A month's expected income against its spending, and when money comes in
-/// next.
+/// A month's expected income against its spending (personal expenses plus
+/// my shares of group expenses), and when money comes in next. What others
+/// owe me is not income: it's shown apart.
 ///
 /// Income for a month: every monthly source, every irregular source (its
 /// amount is a monthly estimate), and one-off sources dated in the month.
@@ -27,6 +29,9 @@ class ComputeMoneyAvailable {
 
     /// For the next income; read in its own time zone.
     required DateTime today,
+
+    /// My shares of group expenses; only [month]'s count.
+    List<GroupShare> shares = const [],
   }) {
     final income = Money.sum([
       for (final source in incomes)
@@ -35,6 +40,8 @@ class ComputeMoneyAvailable {
     final spent = Money.sum([
       for (final expense in expenses)
         if (month.contains(expense.date)) expense.amount,
+      for (final share in shares)
+        if (month.contains(share.date)) share.amount,
     ], currency);
     return MoneyAvailable(
       income: income,

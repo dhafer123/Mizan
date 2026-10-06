@@ -8,6 +8,7 @@ import '../../../../core/result/result.dart';
 import '../../../expenses/presentation/expense_list/month_expenses_provider.dart';
 import '../../../expenses/presentation/shared/categories_provider.dart';
 import '../../../expenses/presentation/shared/no_retry.dart';
+import '../../../groups/presentation/shared/group_data_providers.dart';
 import '../../domain/entities/budget.dart';
 import '../../domain/entities/income_source.dart';
 import 'budget_screen_data.dart';
@@ -46,6 +47,7 @@ Future<BudgetScreenData> budgetScreen(Ref ref, YearMonth month) async {
   final days = await ref.watch(monthExpensesProvider(month).future);
   final budgets = await ref.watch(budgetsProvider.future);
   final incomes = await ref.watch(incomeSourcesProvider.future);
+  final groups = await ref.watch(myGroupMoneyProvider.future);
   final expenses = [for (final day in days) ...day.expenses];
 
   return BudgetScreenData(
@@ -55,6 +57,7 @@ Future<BudgetScreenData> budgetScreen(Ref ref, YearMonth month) async {
       budgets: budgets,
       categories: categories,
       expenses: expenses,
+      shares: groups.shares,
     ),
     available: ref.watch(computeMoneyAvailableProvider)(
       month: month,
@@ -62,7 +65,10 @@ Future<BudgetScreenData> budgetScreen(Ref ref, YearMonth month) async {
       incomes: incomes,
       expenses: expenses,
       today: today,
+      shares: groups.shares,
     ),
+    owedToMe: groups.owedToMe,
+    iOwe: groups.iOwe,
     hasIncome: incomes.isNotEmpty,
     isCurrentMonth: month == YearMonth.of(today),
   );
@@ -76,4 +82,5 @@ void retryBudgetScreen(WidgetRef ref, YearMonth month) => ref
   ..invalidate(monthExpensesProvider(month))
   ..invalidate(budgetsProvider)
   ..invalidate(incomeSourcesProvider)
+  ..invalidate(myGroupMoneyProvider)
   ..invalidate(budgetScreenProvider(month));
