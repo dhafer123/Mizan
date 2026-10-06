@@ -22,7 +22,13 @@ If a local Postgres already uses port 5432, set `POSTGRES_PORT` in `.env` (e.g. 
 
 ## Run tests on the host
 
-Postgres must be reachable with the `POSTGRES_*` settings (e.g. `docker compose up -d db`).
+Postgres must be reachable with the `POSTGRES_*` settings: either `docker compose up -d db`, or a
+local Postgres with a matching role (it needs `CREATEDB` so pytest can create its test database):
+
+```sql
+CREATE ROLE mizan LOGIN PASSWORD 'mizan' CREATEDB;
+CREATE DATABASE mizan OWNER mizan;
+```
 
 ```bash
 python -m venv .venv
