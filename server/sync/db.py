@@ -93,3 +93,16 @@ def sequenced_table(table):
 
 def insert_only(table):
     return _trigger(table, f"{table}_insert_only", "BEFORE", "UPDATE", "mizan_forbid_update")
+
+
+def lock_ledger():
+    """Takes the server_seq lock now, for the rest of the transaction.
+
+    Push calls this before reading the row an op touches, so the read, the
+    merge and the write can't interleave with another op on the same row.
+    (Every synced write takes the same lock anyway; this just takes it early.)
+    """
+    from django.db import connection
+
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT pg_advisory_xact_lock(%s)", [ADVISORY_LOCK_KEY])

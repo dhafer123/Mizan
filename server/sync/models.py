@@ -56,11 +56,15 @@ class EntityHistory(models.Model):
     """
 
     class Kind(models.TextChoices):
+        CREATED = "created"
         CHANGED = "changed"
         # A same-field conflict: this value was replaced by a later edit.
         OVERWRITTEN = "overwritten"
         DELETED = "deleted"
         RESTORED = "restored"
+        # An edit that arrived after the row was deleted: delete wins (§6),
+        # and the edit's values are kept here.
+        DISCARDED = "discarded"
 
     entity = models.CharField(max_length=32)
     entity_id = models.CharField(max_length=64)
@@ -69,7 +73,7 @@ class EntityHistory(models.Model):
     )
     group = models.ForeignKey(Group, null=True, blank=True, on_delete=models.CASCADE, related_name="+")
     kind = models.CharField(max_length=16, choices=Kind.choices)
-    # Empty for a whole-row event (deleted, restored).
+    # Empty for a whole-row event (created, deleted, restored).
     field = models.CharField(max_length=64, blank=True)
     old_value = models.JSONField(null=True, blank=True)
     new_value = models.JSONField(null=True, blank=True)
@@ -77,6 +81,12 @@ class EntityHistory(models.Model):
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
     )
     op_id = models.UUIDField(null=True, blank=True)
+    # The device that sent the op. Push compares it to tell a concurrent edit
+    # (another device) from this device's own earlier op.
+    device_id = models.UUIDField(null=True, blank=True)
+    # The entity's version after this change. Push uses it to find the fields
+    # changed since an op's baseVersion (same-field conflicts).
+    version = models.PositiveIntegerField(null=True, blank=True)
     server_seq = models.BigIntegerField(unique=True, editable=False)
     changed_at = models.DateTimeField(auto_now_add=True)
 
@@ -92,7 +102,7 @@ class EntityHistory(models.Model):
         indexes = [
             models.Index(fields=["owner", "server_seq"], name="history_owner_seq"),
             models.Index(fields=["group", "server_seq"], name="history_group_seq"),
-            models.Index(fields=["entity", "entity_id"], name="history_entity"),
+            models.Index(fields=["entity", "entity_id", "version"], name="history_entity_version"),
         ]
 
     def save(self, *args, **kwargs):

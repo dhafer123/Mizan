@@ -149,16 +149,19 @@ All synced entities also carry the sync metadata: `version`, `deleted` (tombston
 ### Push: `POST /sync/push`
 
 ```json
-{ "ops": [ { "opId": "…", "entity": "shared_expense", "entityId": "…",
+{ "deviceId": "…",
+  "ops": [ { "opId": "…", "entity": "shared_expenses", "entityId": "…",
              "opType": "update", "baseVersion": 3,
-             "changedFields": { "amount": 150000 } } ] }
+             "changedFields": { "amountMinor": 150000 } } ] }
 ```
+
+`deviceId` tells a concurrent edit (another device) from the same device's earlier op: the app keeps a row's version until it pulls, so ops from one device can share a `baseVersion` (ADR 0006).
 
 The server applies the ops in order, each in its own transaction:
 
 1. `opId` already applied? Return the stored result (idempotency).
 2. Check permissions: the user owns the record, or is a member of its group.
-3. `baseVersion == current version`? Apply the op, then `version + 1` and a new `serverSeq`.
+3. Nothing changed by another device since `baseVersion`? Apply the op, then `version + 1` and a new `serverSeq`.
 4. Otherwise it's a **conflict**. Apply the conflict policy below, write `entity_history`, and return the winning state.
 
 It returns a result per op: `applied` / `merged` / `rejected` (with a reason) and the entity's current state.
