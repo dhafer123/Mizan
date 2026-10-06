@@ -1,0 +1,77 @@
+name: server
+
+on:
+  # Every branch, like the app workflow.
+  push:
+    paths: [server/**, .github/workflows/server.yml]
+
+concurrency:
+  group: server-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: server
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: mizan
+          POSTGRES_USER: mizan
+          POSTGRES_PASSWORD: mizan
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U mizan -d mizan"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 30
+    env:
+      DJANGO_SECRET_KEY: ci-only-not-a-secret
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5432"
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: server/requirements*.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Django system checks
+        run: python manage.py check --fail-level WARNING
+
+      - name: Migrations are up to date
+        run: python manage.py makemigrations --check --dry-run
+
+      - name: Test
+        run: pytest
+
+  compose:
+    # Proves `docker compose up` works from a clean checkout.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: docker compose up
+        run: docker compose up --build --detach --wait --wait-timeout 180
+
+      - name: API answers through compose
+        run: curl --fail --silent --show-error http://localhost:8000/health
+
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs
+
+      - name: Tear down
+        if: always()
+        run: docker compose down --volumes
