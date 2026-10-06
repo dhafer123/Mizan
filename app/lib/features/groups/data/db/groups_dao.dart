@@ -51,6 +51,34 @@ class GroupsDao extends DatabaseAccessor<AppDatabase> with _$GroupsDaoMixin {
           (m) => OrderingTerm.asc(m.displayName.collate(Collate.noCase)),
         ]);
 
+  /// History rows of [groupId], its members and its expenses, newest first,
+  /// re-emitted on every change. History rows don't carry a group, so they
+  /// are matched by entity id.
+  Stream<List<EntityHistoryRow>> watchHistory(String groupId) {
+    final db = attachedDatabase;
+    final expenseIds = selectOnly(db.sharedExpenses)
+      ..addColumns([db.sharedExpenses.id])
+      ..where(db.sharedExpenses.groupId.equals(groupId));
+    final memberIds = selectOnly(members)
+      ..addColumns([members.id])
+      ..where(members.groupId.equals(groupId));
+    return (select(db.entityHistory)
+          ..where(
+            (h) =>
+                (h.entity.equals('shared_expenses') &
+                    h.entityId.isInQuery(expenseIds)) |
+                (h.entity.equals(memberEntity) &
+                    h.entityId.isInQuery(memberIds)) |
+                (h.entity.equals(groupEntity) & h.entityId.equals(groupId)),
+          )
+          ..orderBy([(h) => OrderingTerm.desc(h.serverSeq)])
+          ..limit(historyLimit))
+        .watch();
+  }
+
+  /// The most history rows shown for one group.
+  static const historyLimit = 300;
+
   /// A new group and its founder (this account's member row): two ops, the
   /// group's first, so the server sees the group before its member.
   Future<void> insertGroup(GroupRow group, MemberRow founder) =>

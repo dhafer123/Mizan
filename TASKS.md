@@ -125,9 +125,10 @@ The money and group logic is built and proven first, with no UI, because everyth
   *Done when:* widget tests cover each split type, and the server rejects a share sum mismatch.
   *Note:* The server now also recomputes the shares from the split (same largest-remainder rule) and rejects `split_mismatch` / `invalid_split`; split JSON is fixed in ADR 0010. Schema v5 adds `shared_expenses`, built from shadows. Expenses are dated today (no date picker yet) and can't be edited or deleted yet. The simulation now adds shared expenses on phones and checks group balances sum to 0 on every phone. See ADR 0010.
 
-- [ ] **4.3 Group detail: balances + history**
+- [x] **4.3 Group detail: balances + history**
   Balance per member, "you owe / you're owed", an expense list, and edit history ("Ali changed amount 120 → 150").
   *Done when:* the balances match the domain tests for the same data.
+  *Note:* Group screen has Balances / Expenses / History tabs. Balances are recomputed from rows on every change (`WatchGroupBalances` → `ComputeBalances`, never stored); `test/features/groups/data/group_balances_test.dart` stores the domain worked example through the real DB and use cases and gets +540 / −90 / −450. History is the pulled server history (only accepted changes; lost and discarded edits included), matched to the group by entity id since history rows carry no group, last 300 shown. Settlements join the balances in 4.4.
 
 - [ ] **4.4 Settle up**
   Suggested transfers from `simplifyDebts`, a "record payment" action, and a reversing settlement for mistakes.

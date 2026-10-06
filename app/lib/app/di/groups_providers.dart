@@ -11,6 +11,8 @@ import '../../features/groups/domain/usecases/create_invite.dart';
 import '../../features/groups/domain/usecases/join_group.dart';
 import '../../features/groups/domain/usecases/preview_invite.dart';
 import '../../features/groups/domain/usecases/watch_group.dart';
+import '../../features/groups/domain/usecases/watch_group_balances.dart';
+import '../../features/groups/domain/usecases/watch_group_history.dart';
 import '../../features/groups/domain/usecases/watch_groups.dart';
 import '../../features/groups/domain/usecases/watch_members.dart';
 import '../../features/groups/domain/usecases/watch_shared_expenses.dart';
@@ -77,3 +79,11 @@ AddSharedExpense addSharedExpense(Ref ref) => AddSharedExpense(
   ref.watch(clockProvider),
   ref.watch(computeSharesProvider),
 );
+
+@Riverpod(keepAlive: true)
+WatchGroupBalances watchGroupBalances(Ref ref) =>
+    WatchGroupBalances(ref.watch(groupRepositoryProvider));
+
+@Riverpod(keepAlive: true)
+WatchGroupHistory watchGroupHistory(Ref ref) =>
+    WatchGroupHistory(ref.watch(groupRepositoryProvider));

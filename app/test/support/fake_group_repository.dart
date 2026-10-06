@@ -1,5 +1,6 @@
 import 'package:mizan/core/result/result.dart';
 import 'package:mizan/features/groups/domain/entities/group.dart';
+import 'package:mizan/features/groups/domain/entities/history_entry.dart';
 import 'package:mizan/features/groups/domain/entities/member.dart';
 import 'package:mizan/features/groups/domain/entities/shared_expense.dart';
 import 'package:mizan/features/groups/domain/repositories/group_repository.dart';
@@ -13,6 +14,7 @@ class FakeGroupRepository implements GroupRepository {
   final groups = <Group>[];
   final members = <Member>[];
   final expenses = <SharedExpense>[];
+  final history = <HistoryEntry>[];
   final tokens = <String>[];
   Result<String, GroupFailure> joinResult = const Ok('g1');
 
@@ -46,6 +48,11 @@ class FakeGroupRepository implements GroupRepository {
     expenses.add(expense);
     return const Ok(null);
   }
+
+  @override
+  Stream<Result<List<HistoryEntry>, GroupFailure>> watchHistory(
+    String groupId,
+  ) => Stream.value(Ok(history));
 
   @override
   Future<Result<void, GroupFailure>> add(Group group, Member founder) async {

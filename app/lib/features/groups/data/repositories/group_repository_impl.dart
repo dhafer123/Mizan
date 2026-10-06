@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import '../../../../core/result/result.dart';
 import '../../../../core/result/storage_errors_as_failures.dart';
 import '../../domain/entities/group.dart';
+import '../../domain/entities/history_entry.dart';
 import '../../domain/entities/member.dart';
 import '../../domain/entities/shared_expense.dart';
 import '../../domain/repositories/group_repository.dart';
@@ -13,6 +14,7 @@ import '../../domain/value_objects/invite_preview.dart';
 import '../db/groups_dao.dart';
 import '../db/shared_expenses_dao.dart';
 import '../mappers/group_mapper.dart';
+import '../mappers/history_mapper.dart';
 import '../mappers/shared_expense_mapper.dart';
 import '../remote/groups_api.dart';
 
@@ -93,6 +95,16 @@ class GroupRepositoryImpl implements GroupRepository {
       _write(
         () => _expenses.insertSharedExpense(SharedExpenseMapper.toRow(expense)),
       );
+
+  @override
+  Stream<Result<List<HistoryEntry>, GroupFailure>> watchHistory(
+    String groupId,
+  ) => _dao
+      .watchHistory(groupId)
+      .map<Result<List<HistoryEntry>, GroupFailure>>(
+        (rows) => Ok([for (final row in rows) HistoryMapper.toDomain(row)]),
+      )
+      .transform(storageErrorsAsFailures(_storage));
 
   @override
   Future<Result<void, GroupFailure>> add(Group group, Member founder) => _write(

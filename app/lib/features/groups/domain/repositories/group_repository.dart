@@ -1,5 +1,6 @@
 import '../../../../core/result/result.dart';
 import '../entities/group.dart';
+import '../entities/history_entry.dart';
 import '../entities/member.dart';
 import '../entities/shared_expense.dart';
 import '../value_objects/group_failure.dart';
@@ -30,6 +31,10 @@ abstract interface class GroupRepository {
   );
 
   Future<Result<void, GroupFailure>> addExpense(SharedExpense expense);
+
+  /// The group's history (the group, its members and expenses), newest
+  /// first, re-emitted on every change. Only changes the server accepted.
+  Stream<Result<List<HistoryEntry>, GroupFailure>> watchHistory(String groupId);
 
   /// Stores a new group with its founder (this account's member row).
   Future<Result<void, GroupFailure>> add(Group group, Member founder);
