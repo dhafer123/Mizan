@@ -252,7 +252,7 @@ def flat(user):
 def shared(g, payer, shares, entity_id="s-1", **overrides):
     fields = {
         "id": entity_id, "groupId": g.entity_id, "payerId": payer.entity_id, "amountMinor": 6000,
-        "currency": "TND", "date": DAY, "split": {"type": "equal"}, "shares": shares, "categoryId": None,
+        "currency": "TND", "date": DAY, "split": {"type": "exact", "amounts": shares}, "shares": shares, "categoryId": None,
         **overrides,
     }
     return op("shared_expenses", entity_id, "create", 0, **fields)
@@ -267,6 +267,26 @@ def test_shares_must_add_up_to_the_amount(phone, flat):
     assert (bad["reason"], bad["field"]) == ("shares_mismatch", "shares")
     assert good["status"] == "applied"
     assert good["state"]["shares"] == {sami.entity_id: 3001, ali.entity_id: 2999}
+
+
+def test_the_server_recomputes_shares_from_the_split(phone, flat):
+    g, sami, ali = flat
+    low, high = sorted([sami.entity_id, ali.entity_id])
+
+    def push(entity_id, split, shares, amount=6000):
+        return phone.one(shared(g, sami, shares, entity_id, split=split, amountMinor=amount))
+
+    # Each split type, with the app's rounding: the odd unit goes to the lowest id.
+    equal = push("s-eq", {"type": "equal", "memberIds": [high, low]}, {low: 3001, high: 3000}, 6001)
+    percent = push("s-pc", {"type": "percentage", "basisPoints": {low: 2500, high: 7500}}, {low: 1500, high: 4500})
+    weights = push("s-sh", {"type": "shares", "weights": {low: 2, high: 1}}, {low: 4000, high: 2000})
+    # Shares that add up but don't follow the split, and a malformed split.
+    skewed = push("s-x", {"type": "equal", "memberIds": [low, high]}, {low: 4000, high: 2000})
+    bad_percent = push("s-y", {"type": "percentage", "basisPoints": {low: 5000}}, {low: 6000})
+
+    assert [r["status"] for r in (equal, percent, weights)] == ["applied"] * 3
+    assert (skewed["reason"], skewed["field"]) == ("split_mismatch", "shares")
+    assert (bad_percent["reason"], bad_percent["field"]) == ("invalid_split", "split")
 
 
 def test_changing_the_amount_alone_breaks_the_shares(phone, flat):

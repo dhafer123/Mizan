@@ -8,6 +8,7 @@ import '../../../budget/data/db/income_sources_dao.dart';
 import '../../../expenses/data/db/categories_dao.dart';
 import '../../../expenses/data/db/expenses_dao.dart';
 import '../../../groups/data/db/groups_dao.dart';
+import '../../../groups/data/db/shared_expenses_dao.dart';
 import '../../domain/usecases/rebase_row.dart';
 import '../remote/sync_api.dart';
 import 'sync_payload.dart';
@@ -30,7 +31,7 @@ class AccountChangedException implements Exception {
 ///
 /// Pulled rows bypass the outbox on purpose: they come *from* the server.
 /// Shadows are kept for entities this app version has no table for yet
-/// (shared expenses and settlements until 4.2), so the migration that adds
+/// (settlements until 4.4), so the migration that adds
 /// such a table can build its rows from them (ADR 0007).
 ///
 /// **Joining a group.** The group's older rows have seqs below the cursor,
@@ -163,6 +164,9 @@ class SyncLocalStore {
     BudgetsDao.entity => (await _db.budgetsDao.findById(id))?.serverSeq,
     GroupsDao.groupEntity => (await _db.groupsDao.findGroup(id))?.serverSeq,
     GroupsDao.memberEntity => (await _db.groupsDao.findMember(id))?.serverSeq,
+    SharedExpensesDao.entity => (await _db.sharedExpensesDao.findById(
+      id,
+    ))?.serverSeq,
     _ => null,
   };
 
@@ -271,6 +275,15 @@ class SyncLocalStore {
                 serializer: syncSerializer,
               ).toCompanion(false),
             );
+      case SharedExpensesDao.entity:
+        await _db
+            .into(_db.sharedExpenses)
+            .insertOnConflictUpdate(
+              SharedExpenseRow.fromJson(
+                row,
+                serializer: syncSerializer,
+              ).toCompanion(false),
+            );
       default:
         return false; // No table for it in this app version yet.
     }
@@ -325,6 +338,7 @@ class SyncLocalStore {
         _db.groups,
         _db.members,
         _db.groupBackfills,
+        _db.sharedExpenses,
       ]) {
         await _db.delete(table).go();
       }

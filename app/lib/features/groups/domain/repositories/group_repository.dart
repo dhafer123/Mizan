@@ -1,6 +1,7 @@
 import '../../../../core/result/result.dart';
 import '../entities/group.dart';
 import '../entities/member.dart';
+import '../entities/shared_expense.dart';
 import '../value_objects/group_failure.dart';
 import '../value_objects/group_invite.dart';
 import '../value_objects/invite_preview.dart';
@@ -16,6 +17,19 @@ abstract interface class GroupRepository {
 
   /// A group's live members by name, re-emitted on every change.
   Stream<Result<List<Member>, GroupFailure>> watchMembers(String groupId);
+
+  /// [watchGroup], read once.
+  Future<Result<Group?, GroupFailure>> getGroup(String id);
+
+  /// [watchMembers], read once.
+  Future<Result<List<Member>, GroupFailure>> getMembers(String groupId);
+
+  /// A group's live expenses, newest first, re-emitted on every change.
+  Stream<Result<List<SharedExpense>, GroupFailure>> watchExpenses(
+    String groupId,
+  );
+
+  Future<Result<void, GroupFailure>> addExpense(SharedExpense expense);
 
   /// Stores a new group with its founder (this account's member row).
   Future<Result<void, GroupFailure>> add(Group group, Member founder);

@@ -4,6 +4,8 @@ import '../../features/groups/data/remote/groups_api.dart';
 import '../../features/groups/data/repositories/group_repository_impl.dart';
 import '../../features/groups/domain/repositories/group_repository.dart';
 import '../../features/groups/domain/usecases/add_placeholder_member.dart';
+import '../../features/groups/domain/usecases/add_shared_expense.dart';
+import '../../features/groups/domain/usecases/compute_shares.dart';
 import '../../features/groups/domain/usecases/create_group.dart';
 import '../../features/groups/domain/usecases/create_invite.dart';
 import '../../features/groups/domain/usecases/join_group.dart';
@@ -11,6 +13,7 @@ import '../../features/groups/domain/usecases/preview_invite.dart';
 import '../../features/groups/domain/usecases/watch_group.dart';
 import '../../features/groups/domain/usecases/watch_groups.dart';
 import '../../features/groups/domain/usecases/watch_members.dart';
+import '../../features/groups/domain/usecases/watch_shared_expenses.dart';
 import 'auth_providers.dart';
 import 'core_providers.dart';
 import 'database_providers.dart';
@@ -21,6 +24,7 @@ part 'groups_providers.g.dart';
 @Riverpod(keepAlive: true)
 GroupRepository groupRepository(Ref ref) => GroupRepositoryImpl(
   ref.watch(appDatabaseProvider).groupsDao,
+  ref.watch(appDatabaseProvider).sharedExpensesDao,
   GroupsApi(ref.watch(apiDioProvider)),
 );
 
@@ -58,3 +62,18 @@ PreviewInvite previewInvite(Ref ref) =>
 
 @Riverpod(keepAlive: true)
 JoinGroup joinGroup(Ref ref) => JoinGroup(ref.watch(groupRepositoryProvider));
+
+@Riverpod(keepAlive: true)
+WatchSharedExpenses watchSharedExpenses(Ref ref) =>
+    WatchSharedExpenses(ref.watch(groupRepositoryProvider));
+
+@Riverpod(keepAlive: true)
+ComputeShares computeShares(Ref ref) => const ComputeShares();
+
+@Riverpod(keepAlive: true)
+AddSharedExpense addSharedExpense(Ref ref) => AddSharedExpense(
+  ref.watch(groupRepositoryProvider),
+  ref.watch(idGeneratorProvider),
+  ref.watch(clockProvider),
+  ref.watch(computeSharesProvider),
+);

@@ -21,6 +21,10 @@ import 'package:mizan/features/expenses/domain/usecases/edit_category.dart';
 import 'package:mizan/features/expenses/domain/usecases/edit_expense.dart';
 import 'package:mizan/features/expenses/domain/usecases/validate_category.dart';
 import 'package:mizan/features/expenses/domain/usecases/validate_expense.dart';
+import 'package:mizan/features/groups/data/remote/groups_api.dart';
+import 'package:mizan/features/groups/data/repositories/group_repository_impl.dart';
+import 'package:mizan/features/groups/domain/usecases/add_shared_expense.dart';
+import 'package:mizan/features/groups/domain/value_objects/split.dart';
 import 'package:mizan/features/sync/data/remote/sync_api.dart';
 import 'package:mizan/features/sync/data/repositories/sync_repository_impl.dart';
 
@@ -65,6 +69,11 @@ class SimDevice {
     setBudget = SetMonthlyBudget(
       BudgetRepositoryImpl(db.budgetsDao, currency: Currency.tnd),
     );
+    addSharedExpense = AddSharedExpense(
+      GroupRepositoryImpl(db.groupsDao, db.sharedExpensesDao, GroupsApi(dio)),
+      ids,
+      clock,
+    );
   }
 
   final String name;
@@ -81,6 +90,7 @@ class SimDevice {
   late final ArchiveCategory archiveCategory;
   late final CategoryRepositoryImpl categoryRepository;
   late final SetMonthlyBudget setBudget;
+  late final AddSharedExpense addSharedExpense;
 
   /// Every op this phone ever queued, by op id (outbox snapshots: an op
   /// stays in the outbox until the server takes it, so none are missed).
@@ -108,6 +118,45 @@ class SimDevice {
     if (roll < 86) return _renameCategory();
     if (roll < 92) return _archiveCategory();
     return _budget();
+  }
+
+  /// A shared expense in [groupId] through the app's use case, with a
+  /// random payer, subset and split type. Needs the group pulled first.
+  Future<String> randomSharedExpense(String groupId) async {
+    final ids = [for (final m in await db.groupsDao.getMembers(groupId)) m.id]
+      ..sort();
+    if (ids.isEmpty) return 'shared: no group here yet';
+    final who = (ids..shuffle(random)).take(1 + random.nextInt(ids.length));
+    final amount = 100 + random.nextInt(90000);
+    List<int> parts(int total) {
+      // Random non-negative parts adding up to total, one per member.
+      final cuts = [for (final _ in who.skip(1)) random.nextInt(total + 1)]
+        ..sort();
+      return [
+        for (final (i, cut) in [...cuts, total].indexed)
+          cut - (i == 0 ? 0 : cuts[i - 1]),
+      ];
+    }
+
+    final split = switch (random.nextInt(4)) {
+      0 => Split.equal(who.toSet()),
+      1 => Split.exact({
+        for (final (i, part) in parts(amount).indexed)
+          who.elementAt(i): Money(part, Currency.tnd),
+      }),
+      2 => Split.percentage({
+        for (final (i, part) in parts(10000).indexed) who.elementAt(i): part,
+      }),
+      _ => Split.shares({for (final id in who) id: 1 + random.nextInt(3)}),
+    };
+    final result = await addSharedExpense(
+      groupId: groupId,
+      payerId: ids[random.nextInt(ids.length)],
+      amount: Money(amount, Currency.tnd),
+      split: split,
+    );
+    return 'shared ${split.type.name} '
+        '${result.valueOrNull?.id ?? result.failureOrNull}';
   }
 
   Future<String> _add() async {

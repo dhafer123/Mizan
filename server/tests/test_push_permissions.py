@@ -61,7 +61,7 @@ def shared_create(g, payer, shares, entity_id=None, **overrides):
         "amountMinor": sum(shares.values()),
         "currency": g.currency,
         "date": DAY,
-        "split": {"type": "equal"},
+        "split": {"type": "exact", "amounts": shares},
         "shares": shares,
         "categoryId": None,
         **overrides,

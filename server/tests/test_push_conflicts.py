@@ -227,7 +227,7 @@ def test_a_removed_members_pending_ops_are_rejected(user, phone, flat):
     shares = {sami.entity_id: 3000, ali.entity_id: 3000}
     create = {
         "id": expense_id, "groupId": g.entity_id, "payerId": sami.entity_id, "amountMinor": 6000,
-        "currency": "TND", "date": DAY, "split": {"type": "equal"}, "shares": shares, "categoryId": None,
+        "currency": "TND", "date": DAY, "split": {"type": "exact", "amounts": shares}, "shares": shares, "categoryId": None,
     }
     assert phone.one(op("shared_expenses", expense_id, "create", 0, **create))["status"] == "applied"
 

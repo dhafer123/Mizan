@@ -55,6 +55,7 @@ BUILT_IN_CATEGORIES = {
 }
 
 SPLIT_TYPES = {"equal", "exact", "percentage", "shares"}
+FULL_PERCENT = 10_000  # Basis points.
 
 
 class RowInvalid(Exception):
@@ -173,8 +174,62 @@ def _check_shared_expense(values, ctx):
         ctx.member(member_id, "shares", active="shares" in changed)
     if sum(values["shares"].values()) != values["amountMinor"]:
         raise RowInvalid("shares_mismatch", "shares")
-    if values["split"].get("type") not in SPLIT_TYPES:
+    # The shares must be what the split gives, as the app computes them.
+    if expected_shares(values["split"], values["amountMinor"]) != values["shares"]:
+        raise RowInvalid("split_mismatch", "shares")
+
+
+def _id_map(value, minimum=0):
+    """{memberId: int >= minimum}, at least one entry; else invalid_split."""
+    if not isinstance(value, dict) or not value:
         raise RowInvalid("invalid_split", "split")
+    for member_id, n in value.items():
+        if not isinstance(member_id, str) or isinstance(n, bool) or not isinstance(n, int) or n < minimum:
+            raise RowInvalid("invalid_split", "split")
+    return value
+
+
+def expected_shares(split, amount):
+    """The shares a split gives for `amount`: the app's ComputeShares
+    (app/lib/features/groups/domain/usecases/compute_shares.dart).
+
+    Splits are `{"type": "equal", "memberIds": [...]}`, `{"type": "exact",
+    "amounts": {id: minor}}`, `{"type": "percentage", "basisPoints": {id: bp}}`
+    or `{"type": "shares", "weights": {id: w}}`. Raises RowInvalid
+    `invalid_split` for anything else."""
+    kind = split.get("type")
+    keys = {"equal": "memberIds", "exact": "amounts", "percentage": "basisPoints", "shares": "weights"}
+    if kind not in SPLIT_TYPES or set(split) != {"type", keys[kind]}:
+        raise RowInvalid("invalid_split", "split")
+    body = split[keys[kind]]
+    if kind == "equal":
+        names = isinstance(body, list) and body and all(isinstance(m, str) for m in body)
+        if not names or len(set(body)) != len(body):
+            raise RowInvalid("invalid_split", "split")
+        weights = {member_id: 1 for member_id in body}
+    elif kind == "exact":
+        amounts = _id_map(body)
+        if sum(amounts.values()) != amount:
+            raise RowInvalid("invalid_split", "split")
+        return dict(amounts)
+    else:
+        weights = _id_map(body)
+        total = sum(weights.values())
+        if (kind == "percentage" and total != FULL_PERCENT) or total == 0:
+            raise RowInvalid("invalid_split", "split")
+    return _largest_remainder(amount, weights)
+
+
+def _largest_remainder(amount, weights):
+    """Rounded-down shares, then one unit each to the largest remainders,
+    ties to the lowest member id: every device gets the same answer."""
+    ids = sorted(weights)
+    total = sum(weights.values())
+    shares = {i: amount * weights[i] // total for i in ids}
+    by_remainder = sorted(ids, key=lambda i: (-(amount * weights[i] % total), i))
+    for i in by_remainder[: amount - sum(shares.values())]:
+        shares[i] += 1
+    return shares
 
 
 def _check_settlement(values, ctx):

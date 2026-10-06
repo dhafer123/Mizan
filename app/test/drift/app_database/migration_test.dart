@@ -1,4 +1,6 @@
 // Started from `dart run drift_dev make-migrations`; the data checks are ours.
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import 'package:drift_dev/api/migrations_native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,6 +14,7 @@ import 'generated/schema_v1.dart' as v1;
 import 'generated/schema_v2.dart' as v2;
 import 'generated/schema_v3.dart' as v3;
 import 'generated/schema_v4.dart' as v4;
+import 'generated/schema_v5.dart' as v5;
 
 AppDatabase _open(QueryExecutor executor) => AppDatabase(
   executor,
@@ -143,6 +146,48 @@ void main() {
           (member.groupId, member.userId, member.displayName, member.deleted),
           ('g1', null, 'Ali', 1),
         );
+      },
+    );
+  });
+
+  test('v4 → v5 builds shared expenses from their shadows', () async {
+    const state =
+        '{"id":"s1","groupId":"g1","payerId":"m1","amountMinor":9000,'
+        '"currency":"TND","date":"2026-10-06T00:00:00.000Z",'
+        '"split":{"type":"equal","memberIds":["m1","m2"]},'
+        '"shares":{"m1":4500,"m2":4500},"categoryId":null,"version":1,'
+        '"deleted":false,"updatedBy":"7","serverSeq":12}';
+
+    await verifier.testWithDataIntegrity(
+      oldVersion: 4,
+      newVersion: 5,
+      createOld: v4.DatabaseAtV4.new,
+      createNew: v5.DatabaseAtV5.new,
+      openTestedDatabase: _open,
+      createItems: (batch, oldDb) {
+        batch.insert(
+          oldDb.serverRows,
+          const v4.ServerRowsData(
+            entity: 'shared_expenses',
+            entityId: 's1',
+            state: state,
+            serverSeq: 12,
+          ),
+        );
+      },
+      validateItems: (newDb) async {
+        final row = await newDb.select(newDb.sharedExpenses).getSingle();
+        expect(
+          (row.groupId, row.payerId, row.amountMinor, row.categoryId),
+          ('g1', 'm1', 9000, null),
+        );
+        expect(row.date, '2026-10-06T00:00:00.000Z');
+        expect(jsonDecode(row.split), {
+          'type': 'equal',
+          'memberIds': ['m1', 'm2'],
+        });
+        expect(jsonDecode(row.shares), {'m1': 4500, 'm2': 4500});
+        expect((row.version, row.deleted, row.serverSeq), (1, 0, 12));
       },
     );
   });

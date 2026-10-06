@@ -55,7 +55,7 @@ def shared_expense(group, payer, shares, **kw):
         "amount_minor": sum(shares.values()),
         "currency": group.currency,
         "date": DAY,
-        "split": {"type": "equal"},
+        "split": {"type": "exact", "amounts": shares},
         "shares": shares,
         **kw,
     }

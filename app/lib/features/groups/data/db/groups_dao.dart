@@ -39,12 +39,17 @@ class GroupsDao extends DatabaseAccessor<AppDatabase> with _$GroupsDaoMixin {
 
   /// A group's live members by name, re-emitted on every change.
   Stream<List<MemberRow>> watchMembers(String groupId) =>
-      (select(members)
-            ..where((m) => m.groupId.equals(groupId) & m.deleted.not())
-            ..orderBy([
-              (m) => OrderingTerm.asc(m.displayName.collate(Collate.noCase)),
-            ]))
-          .watch();
+      _members(groupId).watch();
+
+  /// [watchMembers], read once.
+  Future<List<MemberRow>> getMembers(String groupId) => _members(groupId).get();
+
+  SimpleSelectStatement<$MembersTable, MemberRow> _members(String groupId) =>
+      select(members)
+        ..where((m) => m.groupId.equals(groupId) & m.deleted.not())
+        ..orderBy([
+          (m) => OrderingTerm.asc(m.displayName.collate(Collate.noCase)),
+        ]);
 
   /// A new group and its founder (this account's member row): two ops, the
   /// group's first, so the server sees the group before its member.

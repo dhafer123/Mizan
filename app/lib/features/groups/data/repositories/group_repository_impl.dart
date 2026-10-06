@@ -4,21 +4,25 @@ import '../../../../core/result/result.dart';
 import '../../../../core/result/storage_errors_as_failures.dart';
 import '../../domain/entities/group.dart';
 import '../../domain/entities/member.dart';
+import '../../domain/entities/shared_expense.dart';
 import '../../domain/repositories/group_repository.dart';
 import '../../domain/value_objects/group_error.dart';
 import '../../domain/value_objects/group_failure.dart';
 import '../../domain/value_objects/group_invite.dart';
 import '../../domain/value_objects/invite_preview.dart';
 import '../db/groups_dao.dart';
+import '../db/shared_expenses_dao.dart';
 import '../mappers/group_mapper.dart';
+import '../mappers/shared_expense_mapper.dart';
 import '../remote/groups_api.dart';
 
 /// [GroupRepository] over the local tables (writes queue sync ops) and the
 /// server's invite endpoints. Nothing is thrown past this class.
 class GroupRepositoryImpl implements GroupRepository {
-  const GroupRepositoryImpl(this._dao, this._api);
+  const GroupRepositoryImpl(this._dao, this._expenses, this._api);
 
   final GroupsDao _dao;
+  final SharedExpensesDao _expenses;
   final GroupsApi _api;
 
   static const _storage = GroupFailure(GroupError.storage);
@@ -61,6 +65,36 @@ class GroupRepositoryImpl implements GroupRepository {
           .transform(storageErrorsAsFailures(_storage));
 
   @override
+  Future<Result<Group?, GroupFailure>> getGroup(String id) => _read(() async {
+    final row = await _dao.findGroup(id);
+    return row == null || row.deleted ? null : GroupMapper.toDomain(row);
+  });
+
+  @override
+  Future<Result<List<Member>, GroupFailure>> getMembers(String groupId) =>
+      _read(() async {
+        final rows = await _dao.getMembers(groupId);
+        return [for (final row in rows) GroupMapper.memberToDomain(row)];
+      });
+
+  @override
+  Stream<Result<List<SharedExpense>, GroupFailure>> watchExpenses(
+    String groupId,
+  ) => _expenses
+      .watchGroup(groupId)
+      .map<Result<List<SharedExpense>, GroupFailure>>(
+        (rows) =>
+            Ok([for (final row in rows) SharedExpenseMapper.toDomain(row)]),
+      )
+      .transform(storageErrorsAsFailures(_storage));
+
+  @override
+  Future<Result<void, GroupFailure>> addExpense(SharedExpense expense) =>
+      _write(
+        () => _expenses.insertSharedExpense(SharedExpenseMapper.toRow(expense)),
+      );
+
+  @override
   Future<Result<void, GroupFailure>> add(Group group, Member founder) => _write(
     () => _dao.insertGroup(
       GroupMapper.toRow(group),
@@ -85,6 +119,16 @@ class GroupRepositoryImpl implements GroupRepository {
   @override
   Future<Result<String, GroupFailure>> join(String token) =>
       _call(() => _api.join(token));
+
+  static Future<Result<T, GroupFailure>> _read<T>(
+    Future<T> Function() read,
+  ) async {
+    try {
+      return Ok(await read());
+    } on Object {
+      return const Err(_storage);
+    }
+  }
 
   static Future<Result<void, GroupFailure>> _write(
     Future<void> Function() write,

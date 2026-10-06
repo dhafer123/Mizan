@@ -16,6 +16,8 @@ import '../../features/groups/data/db/group_backfills_table.dart';
 import '../../features/groups/data/db/groups_dao.dart';
 import '../../features/groups/data/db/groups_table.dart';
 import '../../features/groups/data/db/members_table.dart';
+import '../../features/groups/data/db/shared_expenses_dao.dart';
+import '../../features/groups/data/db/shared_expenses_table.dart';
 import '../../features/sync/data/db/entity_history_table.dart';
 import '../../features/sync/data/db/outbox_dao.dart';
 import '../../features/sync/data/db/outbox_op_type.dart';
@@ -46,6 +48,7 @@ part 'app_database.g.dart';
     Groups,
     Members,
     GroupBackfills,
+    SharedExpenses,
   ],
   daos: [
     ExpensesDao,
@@ -55,6 +58,7 @@ part 'app_database.g.dart';
     OutboxDao,
     SyncStateDao,
     GroupsDao,
+    SharedExpensesDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -80,7 +84,7 @@ class AppDatabase extends _$AppDatabase {
   final Clock clock;
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -125,6 +129,30 @@ class AppDatabase extends _$AppDatabase {
             json_extract(state, '\$.deleted'),
             json_extract(state, '\$.updatedBy'), server_seq
           FROM server_rows WHERE entity = 'members'
+        ''');
+      },
+      // 4.2: shared expenses, built from their shadows like v4. `split` and
+      // `shares` are JSON objects in the shadow; json_extract returns them
+      // as JSON text, which is how the columns store them.
+      from4To5: (m, schema) async {
+        await m.createTable(schema.sharedExpenses);
+        await m.createIndex(schema.sharedExpensesGroup);
+        await customStatement('''
+          INSERT INTO shared_expenses (id, group_id, payer_id, amount_minor,
+            currency, date, split, shares, category_id, version, deleted,
+            updated_by, server_seq)
+          SELECT entity_id, json_extract(state, '\$.groupId'),
+            json_extract(state, '\$.payerId'),
+            json_extract(state, '\$.amountMinor'),
+            json_extract(state, '\$.currency'),
+            json_extract(state, '\$.date'),
+            json_extract(state, '\$.split'),
+            json_extract(state, '\$.shares'),
+            json_extract(state, '\$.categoryId'),
+            json_extract(state, '\$.version'),
+            json_extract(state, '\$.deleted'),
+            json_extract(state, '\$.updatedBy'), server_seq
+          FROM server_rows WHERE entity = 'shared_expenses'
         ''');
       },
     ),

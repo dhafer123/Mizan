@@ -10,6 +10,8 @@ class GroupFailure extends Failure {
   String get message => switch (error) {
     GroupError.nameEmpty => 'Enter a name.',
     GroupError.nameTooLong => 'The name is too long.',
+    GroupError.notFound => 'This group is no longer on this phone.',
+    GroupError.unknownMember => 'The payer must be in the group.',
     GroupError.signedOut => 'Sign in to share expenses with a group.',
     GroupError.invalidLink => "This isn't a Mizan invite link.",
     GroupError.offline => "You're offline. Connect and try again.",

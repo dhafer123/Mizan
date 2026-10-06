@@ -2,13 +2,14 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:dio/dio.dart';
-import 'package:drift/drift.dart' show DataClass;
+import 'package:drift/drift.dart' show BooleanExpressionOperators, DataClass;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mizan/app/db/app_database.dart';
 import 'package:mizan/core/money/currency.dart';
 import 'package:mizan/core/money/money.dart';
 import 'package:mizan/core/result/failure.dart';
 import 'package:mizan/core/result/result.dart';
+import 'package:mizan/features/groups/data/mappers/shared_expense_mapper.dart';
 import 'package:mizan/features/groups/domain/entities/settlement.dart';
 import 'package:mizan/features/groups/domain/entities/shared_expense.dart';
 import 'package:mizan/features/groups/domain/usecases/compute_balances.dart';
@@ -21,7 +22,7 @@ import 'fake_sync_server.dart';
 import 'sim_device.dart';
 import 'sim_network.dart';
 
-const _account = 'sim-account';
+const _account = simAccountId;
 
 /// What the scenarios exercised, summed over a run (printed at the end), so
 /// a green run can't hide a harness that never hits the hard paths.
@@ -31,14 +32,25 @@ abstract final class SimStats {
   static var lostResponses = 0;
   static final statuses = <String, int>{};
   static final historyKinds = <String, int>{};
+  static final entities = <String, int>{};
 
   static String summary() =>
       '$scenarios scenarios, $ops ops, $lostResponses lost push responses\n'
+      '  ops by entity: $entities\n'
       '  results: $statuses\n'
       '  history: $historyKinds';
 }
 
-const _personal = {'expenses', 'categories', 'income_sources', 'budgets'};
+/// The synced tables a phone holds, compared with each other and the server.
+const _synced = {
+  'expenses',
+  'categories',
+  'income_sources',
+  'budgets',
+  'groups',
+  'members',
+  'shared_expenses',
+};
 
 /// One random scenario: 2–3 phones of one account make random edits, push
 /// and pull in random order, go offline at random and lose push responses;
@@ -153,7 +165,11 @@ class SyncScenario {
     final roll = random.nextInt(100);
     String what;
     if (roll < 45) {
-      what = await d.randomEdit();
+      // On the fake server this account is in a group: some edits are
+      // shared expenses.
+      what = fake != null && random.nextInt(4) == 0
+          ? await d.randomSharedExpense(FakeSyncServer.groupId)
+          : await d.randomEdit();
       await d.rememberOutbox();
     } else if (roll < 58) {
       await d.rememberOutbox();
@@ -225,6 +241,14 @@ class SyncScenario {
       'budgets': [
         for (final r in await d.db.select(d.db.budgets).get()) canon(r),
       ]..sort(),
+      'groups': [for (final r in await d.db.select(d.db.groups).get()) canon(r)]
+        ..sort(),
+      'members': [
+        for (final r in await d.db.select(d.db.members).get()) canon(r),
+      ]..sort(),
+      'shared_expenses': [
+        for (final r in await d.db.select(d.db.sharedExpenses).get()) canon(r),
+      ]..sort(),
       'entity_history': [
         for (final r in await d.db.select(d.db.entityHistory).get()) canon(r),
       ]..sort(),
@@ -266,7 +290,7 @@ class SyncScenario {
     }
 
     final server = await _serverChanges();
-    for (final table in _personal) {
+    for (final table in _synced) {
       final serverRows = [
         for (final c in server)
           if (c['entity'] == table)
@@ -369,6 +393,7 @@ class SyncScenario {
       final status = result.status;
       final key = result.reason == null ? status : '$status:${result.reason}';
       SimStats.statuses[key] = (SimStats.statuses[key] ?? 0) + 1;
+      SimStats.entities[op.entity] = (SimStats.entities[op.entity] ?? 0) + 1;
       expect(
         ['applied', 'merged', 'rejected'],
         contains(status),
@@ -445,6 +470,22 @@ class SyncScenario {
         reason: 'money: budget ${b.id} limit',
       );
     }
+    // Group balances on this phone, from its own rows, sum to 0. (The
+    // settlements table comes in 4.4; until then, expenses alone.)
+    final shared = await (d.db.select(
+      d.db.sharedExpenses,
+    )..where((e) => e.deleted.not())).get();
+    final balances = const ComputeBalances()(
+      currency: Currency.tnd,
+      expenses: [for (final r in shared) SharedExpenseMapper.toDomain(r)],
+      settlements: const [],
+    );
+    expect(balances.isOk, isTrue, reason: 'money: ${d.name} $balances');
+    final sum = balances.valueOrNull!.values.fold(
+      0,
+      (s, m) => s + m.minorUnits,
+    );
+    expect(sum, 0, reason: 'money: ${d.name} group balances sum to $sum');
   }
 
   // --- Group actor (fake server only) ---
@@ -502,7 +543,7 @@ class SyncScenario {
           'amountMinor': amount,
           'currency': 'TND',
           'date': '2026-10-01T00:00:00.000Z',
-          'split': {'type': 'equal'},
+          'split': {'type': 'exact', 'amounts': split(amount, who)},
           'shares': split(amount, who),
           'categoryId': null,
         }),

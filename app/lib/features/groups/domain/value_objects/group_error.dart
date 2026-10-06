@@ -5,6 +5,12 @@ enum GroupError {
   /// Longer than the limit (`GroupNames`).
   nameTooLong,
 
+  /// The group isn't on this phone (anymore).
+  notFound,
+
+  /// The payer isn't a member of the group.
+  unknownMember,
+
   /// Groups are shared through the server: they need an account.
   signedOut,
 

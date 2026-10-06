@@ -1,14 +1,18 @@
 /// An in-memory server with the same sync rules as the Django one
 /// (server/sync/push.py, pull.py), for the simulation harness.
 ///
-/// One account. Personal entities as the app sends them, plus shared
-/// expenses and settlements in one group (pushed by the harness directly,
-/// since the app has no group tables yet) so money integrity can be checked
-/// on the server. Keep it in step with push.py: the e2e job runs the same
-/// scenarios against the real server.
+/// One account. Personal entities as the app sends them, plus one group
+/// (seeded, with this account as member m1): phones add shared expenses to
+/// it through the app, and a group actor pushes shared expenses and
+/// settlements straight here, so money integrity can be checked on phones
+/// and server. Keep it in step with push.py and pull.py: the e2e job runs
+/// the same scenarios against the real server.
 library;
 
 const userId = '1';
+
+/// The account every simulated phone signs in to.
+const simAccountId = 'sim-account';
 const _changedAt = '2026-10-06T09:00:00.000Z';
 
 typedef Json = Map<String, Object?>;
@@ -172,6 +176,63 @@ void _checkBudget(Json v, String id, FakeSyncServer s) {
   }
 }
 
+/// The shares a split gives (server/sync/entities.py `expected_shares`).
+Map<String, int> _expectedShares(Json split, int amount) {
+  Never invalid() => throw const _Invalid('invalid_split', 'split');
+  Map<String, int> ints(Object? v) {
+    if (v is! Map || v.isEmpty) invalid();
+    final out = <String, int>{};
+    for (final MapEntry(:key, :value) in v.entries) {
+      if (key is! String || value is! int || value < 0) invalid();
+      out[key] = value;
+    }
+    return out;
+  }
+
+  const keys = {
+    'equal': 'memberIds',
+    'exact': 'amounts',
+    'percentage': 'basisPoints',
+    'shares': 'weights',
+  };
+  final key = keys[split['type']];
+  if (key == null || split.length != 2 || !split.containsKey(key)) invalid();
+  final body = split[key];
+  final Map<String, int> weights;
+  switch (split['type']) {
+    case 'equal':
+      if (body is! List || body.isEmpty || body.toSet().length != body.length) {
+        invalid();
+      }
+      weights = {for (final id in body) id as String: 1};
+    case 'exact':
+      final amounts = ints(body);
+      if (amounts.values.fold(0, (a, b) => a + b) != amount) invalid();
+      return amounts;
+    default:
+      weights = ints(body);
+      final total = weights.values.fold(0, (a, b) => a + b);
+      if (total == 0 || (split['type'] == 'percentage' && total != 10000)) {
+        invalid();
+      }
+  }
+  final ids = weights.keys.toList()..sort();
+  final total = weights.values.fold(0, (a, b) => a + b);
+  final shares = {for (final i in ids) i: amount * weights[i]! ~/ total};
+  final byRemainder = [...ids]
+    ..sort((a, b) {
+      final r = (amount * weights[b]! % total).compareTo(
+        amount * weights[a]! % total,
+      );
+      return r != 0 ? r : a.compareTo(b);
+    });
+  final left = amount - shares.values.fold<int>(0, (a, b) => a + b);
+  for (final i in byRemainder.take(left)) {
+    shares[i] = shares[i]! + 1;
+  }
+  return shares;
+}
+
 void _checkSharedExpense(Json v, String id, FakeSyncServer s) {
   if (v['currency'] != FakeSyncServer.groupCurrency) {
     throw const _Invalid('currency_mismatch', 'currency');
@@ -183,6 +244,13 @@ void _checkSharedExpense(Json v, String id, FakeSyncServer s) {
   }
   if (shares.values.fold(0, (a, b) => a + b) != v['amountMinor']) {
     throw const _Invalid('shares_mismatch', 'shares');
+  }
+  final expected = _expectedShares(
+    (v['split']! as Map).cast<String, Object?>(),
+    v['amountMinor']! as int,
+  );
+  if (!jsonEquals(expected, shares)) {
+    throw const _Invalid('split_mismatch', 'shares');
   }
 }
 
@@ -232,7 +300,32 @@ class _Rejected implements Exception {
 }
 
 class FakeSyncServer {
-  FakeSyncServer({this.pageSize = 200});
+  FakeSyncServer({this.pageSize = 200}) {
+    // The group and its members, as if made on another phone: this account
+    // is m1, the others are placeholders.
+    Json synced(Json row) =>
+        {...row, 'version': 1, 'deleted': false, 'updatedBy': userId}
+          ..['serverSeq'] = ++seq;
+    rows['groups'] = {
+      groupId: synced({'id': groupId, 'name': 'Flat', 'currency': 'TND'}),
+    };
+    rows['members'] = {
+      for (final id in members.toList()..sort())
+        id: synced({
+          'id': id,
+          'groupId': groupId,
+          'userId': id == 'm1' ? simAccountId : null,
+          'displayName': id,
+        }),
+    };
+  }
+
+  static const _groupEntities = {
+    'groups',
+    'members',
+    'shared_expenses',
+    'settlements',
+  };
 
   /// Max changes per pull page, whatever the client asks for (pages small
   /// enough to make the client follow `hasMore`).
@@ -537,19 +630,23 @@ class FakeSyncServer {
 
   // --- /sync/pull ---
 
-  Json pull(int since, int limit) {
+  /// With [group], only that group's rows (the backfill after joining).
+  Json pull(int since, int limit, {String? group}) {
+    bool wanted(String entity) =>
+        group == null || (group == groupId && _groupEntities.contains(entity));
     final changes =
         <Json>[
           for (final MapEntry(key: entity, value: table) in rows.entries)
             for (final row in table.values)
-              if ((row['serverSeq']! as int) > since)
+              if ((row['serverSeq']! as int) > since && wanted(entity))
                 {
                   'entity': entity,
                   'serverSeq': row['serverSeq'],
                   'state': {...row},
                 },
           for (final h in history)
-            if ((h['serverSeq']! as int) > since)
+            if ((h['serverSeq']! as int) > since &&
+                wanted(h['entity']! as String))
               {
                 'entity': 'entity_history',
                 'serverSeq': h['serverSeq'],

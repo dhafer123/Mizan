@@ -31,6 +31,7 @@ class FakeBackend implements SimBackend {
       SyncApi.pullPath => server.pull(
         request.queryParameters['since'] as int,
         request.queryParameters['limit'] as int,
+        group: request.queryParameters['group'] as String?,
       ),
       final path => throw StateError('No route for $path'),
     };

@@ -120,9 +120,10 @@ The money and group logic is built and proven first, with no UI, because everyth
   *Done when:* server tests cover invites (valid, expired, reused) and claiming; you can join a group from a second device.
   *Note:* Groups and members sync through push (founder rule: only the creator's own first member row may set `userId`). Invites are server-only, single-use, 7 days; an invite can target a placeholder to claim it. Joining triggers a group-scoped backfill (`/sync/pull?group=`). Added qr_flutter (approved); the QR holds a `mizan://mizan.app/join/<token>` link, scanned with the phone's camera or pasted (no in-app scanner). Schema v4 builds groups/members from shadows. Second-device join proven by `test_e2e/join_group_e2e_test.dart` on a real server. See ADR 0009.
 
-- [ ] **4.2 Add shared expense**
+- [x] **4.2 Add shared expense**
   Payer, amount, split type (equal / exact / % / shares), member subset, category. A live preview of each share; the save button is disabled until the shares sum to the amount.
   *Done when:* widget tests cover each split type, and the server rejects a share sum mismatch.
+  *Note:* The server now also recomputes the shares from the split (same largest-remainder rule) and rejects `split_mismatch` / `invalid_split`; split JSON is fixed in ADR 0010. Schema v5 adds `shared_expenses`, built from shadows. Expenses are dated today (no date picker yet) and can't be edited or deleted yet. The simulation now adds shared expenses on phones and checks group balances sum to 0 on every phone. See ADR 0010.
 
 - [ ] **4.3 Group detail: balances + history**
   Balance per member, "you owe / you're owed", an expense list, and edit history ("Ali changed amount 120 → 150").
@@ -234,4 +235,5 @@ The money and group logic is built and proven first, with no UI, because everyth
 - 2026-10-06: 3.5 — Joining a group later needs a backfill: rows written before the joiner's cursor never come through a normal pull. 4.1 must send the group's current rows on join (e.g. a group-scoped `since=0` pull). Removed members get their own member tombstone, then nothing more from the group.
 - 2026-10-06: 3.6 — Pulled rows of entities without a local table yet are skipped while the cursor moves on (3.7: their shadows are kept in `server_rows`, so week 4's migration builds the new tables from them). The interceptor re-reads stored tokens before signing out, so WorkManager and the app can't log each other out by racing a refresh.
 - 2026-10-06: 4.1 — Groups and members can't be deleted yet (removing a member waits for 4.4: their balance must be 0). Groups need an account; the Groups screen is at `/groups`, from Home's app bar. 4.2/4.4 tables can build from `server_rows` like v4 did.
+- 2026-10-06: 4.2 — A shared expense's category is the payer's personal category id (built-ins are the same everywhere; a custom one shows only to its owner). Settlements still have no local table: 4.4 adds it (from shadows) and adds them to the simulation's on-phone balance check.
 - 2026-10-06: 3.7 — Week 4 (4.2/4.4) must extend the simulation with shared expenses and settlements on devices and check group balances sum to 0 on every device. The client now keeps shadow server rows (schema v3); `DJANGO_CONN_MAX_AGE` defaults to 0.

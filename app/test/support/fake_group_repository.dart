@@ -1,6 +1,7 @@
 import 'package:mizan/core/result/result.dart';
 import 'package:mizan/features/groups/domain/entities/group.dart';
 import 'package:mizan/features/groups/domain/entities/member.dart';
+import 'package:mizan/features/groups/domain/entities/shared_expense.dart';
 import 'package:mizan/features/groups/domain/repositories/group_repository.dart';
 import 'package:mizan/features/groups/domain/value_objects/group_error.dart';
 import 'package:mizan/features/groups/domain/value_objects/group_failure.dart';
@@ -11,6 +12,7 @@ import 'package:mizan/features/groups/domain/value_objects/invite_preview.dart';
 class FakeGroupRepository implements GroupRepository {
   final groups = <Group>[];
   final members = <Member>[];
+  final expenses = <SharedExpense>[];
   final tokens = <String>[];
   Result<String, GroupFailure> joinResult = const Ok('g1');
 
@@ -25,6 +27,25 @@ class FakeGroupRepository implements GroupRepository {
   @override
   Stream<Result<List<Member>, GroupFailure>> watchMembers(String groupId) =>
       Stream.value(Ok(members.where((m) => m.groupId == groupId).toList()));
+
+  @override
+  Future<Result<Group?, GroupFailure>> getGroup(String id) async =>
+      Ok(groups.where((g) => g.id == id).firstOrNull);
+
+  @override
+  Future<Result<List<Member>, GroupFailure>> getMembers(String groupId) async =>
+      Ok(members.where((m) => m.groupId == groupId).toList());
+
+  @override
+  Stream<Result<List<SharedExpense>, GroupFailure>> watchExpenses(
+    String groupId,
+  ) => Stream.value(Ok(expenses.where((e) => e.groupId == groupId).toList()));
+
+  @override
+  Future<Result<void, GroupFailure>> addExpense(SharedExpense expense) async {
+    expenses.add(expense);
+    return const Ok(null);
+  }
 
   @override
   Future<Result<void, GroupFailure>> add(Group group, Member founder) async {

@@ -235,7 +235,7 @@ receipt ─► OCR (ML Kit) ──┘
 | `notifications` | FCM pushes: "new shared expense", "you were added to a group", settle-up reminders |
 
 - PostgreSQL, with Docker Compose for local development.
-- The server **re-validates** domain rules (shares sum to the amount, member belongs to the group). It never trusts the client.
+- The server **re-validates** domain rules (shares sum to the amount *and* are what the split gives, member belongs to the group). It never trusts the client. Split JSON: ADR 0010.
 - pytest covers the API and every conflict case in §6.
 
 ## 10. Security and privacy

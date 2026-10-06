@@ -26,10 +26,12 @@ import 'package:mizan/features/expenses/domain/usecases/validate_expense.dart';
 import 'package:mizan/features/groups/data/remote/groups_api.dart';
 import 'package:mizan/features/groups/data/repositories/group_repository_impl.dart';
 import 'package:mizan/features/groups/domain/usecases/add_placeholder_member.dart';
+import 'package:mizan/features/groups/domain/usecases/add_shared_expense.dart';
 import 'package:mizan/features/groups/domain/usecases/create_group.dart';
 import 'package:mizan/features/groups/domain/usecases/create_invite.dart';
 import 'package:mizan/features/groups/domain/usecases/join_group.dart';
 import 'package:mizan/features/groups/domain/usecases/preview_invite.dart';
+import 'package:mizan/features/groups/domain/value_objects/split.dart';
 import 'package:mizan/features/sync/data/remote/sync_api.dart';
 import 'package:mizan/features/sync/data/repositories/sync_repository_impl.dart';
 import 'package:mizan/features/sync/domain/usecases/claim_local_data.dart';
@@ -83,7 +85,11 @@ class _Phone {
     );
     await ClaimLocalData(sync)(account.id);
     await auth.dispose();
-    final groups = GroupRepositoryImpl(db.groupsDao, GroupsApi(apiDio));
+    final groups = GroupRepositoryImpl(
+      db.groupsDao,
+      db.sharedExpensesDao,
+      GroupsApi(apiDio),
+    );
     return _Phone._(db, account, groups, sync, apiDio);
   }
 
@@ -160,6 +166,41 @@ void main() {
       expect(await sami.members(group.id), expected);
       final again = await JoinGroup(sami.groups)(invite.link);
       expect(again.isErr, isTrue);
+
+      // Ali records expenses on his phone; the server checks the shares
+      // against the split (same rounding) and Sami's phone gets them.
+      final memberIds = [
+        for (final m in await ali.db.groupsDao.getMembers(group.id)) m.id,
+      ]..sort();
+      final add = AddSharedExpense(ali.groups, _ids, _clock);
+      for (final split in [
+        Split.equal(memberIds.toSet()),
+        Split.percentage({memberIds.first: 3333, memberIds.last: 6667}),
+      ]) {
+        final added = await add(
+          groupId: group.id,
+          payerId: placeholder.id,
+          amount: const Money(100001, Currency.tnd),
+          split: split,
+        );
+        expect(added.isOk, isTrue, reason: '$added');
+      }
+      await ali.sync();
+      expect(await ali.db.outboxDao.pending(), isEmpty);
+      expect(
+        (await ali.db.select(ali.db.outbox).get()).where(
+          (o) => o.rejectReason != null,
+        ),
+        isEmpty,
+        reason: 'the server accepted both',
+      );
+      await sami.sync();
+      final onSami = await sami.db.select(sami.db.sharedExpenses).get();
+      expect(onSami, hasLength(2));
+      for (final e in onSami) {
+        final total = e.shares.values.fold<int>(0, (a, b) => a + (b! as int));
+        expect(total, 100001);
+      }
     },
     skip: _serverUrl == null ? 'Set MIZAN_E2E_URL to run' : false,
     timeout: const Timeout(Duration(minutes: 2)),

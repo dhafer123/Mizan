@@ -2,17 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/di/groups_providers.dart';
+import '../../../../core/money/money_formatter.dart';
 import '../../../auth/presentation/account_provider.dart';
+import '../../../expenses/domain/entities/category.dart';
+import '../../../expenses/presentation/shared/categories_provider.dart';
 import '../../../expenses/presentation/shared/failure_message.dart';
 import '../../domain/entities/group.dart';
 import '../../domain/entities/member.dart';
+import '../add_expense/add_shared_expense_sheet.dart';
 import '../shared/group_data_providers.dart';
 import '../shared/load_error.dart';
 import '../shared/name_sheet.dart';
 import 'invite_sheet.dart';
 
-/// A group's members. Invite people, or add placeholders for those not on
-/// the app yet (each can be invited to claim their place later).
+/// A group's members and expenses. Invite people, add placeholders for
+/// those not on the app yet (each can be invited to claim their place
+/// later), and add expenses.
 class GroupScreen extends ConsumerWidget {
   const GroupScreen({required this.groupId, super.key});
 
@@ -78,20 +83,19 @@ class _Loaded extends ConsumerWidget {
             ),
             loading: () => const Center(child: CircularProgressIndicator()),
           ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => showNameSheet(
-          context,
-          title: 'Add a member',
-          label: 'Name',
-          action: 'Add',
-          onSave: (name) => ref.read(addPlaceholderMemberProvider)(
-            groupId: group.id,
-            name: name,
+      floatingActionButton: switch (ref.watch(membersProvider(group.id))) {
+        AsyncData(value: final members) when members.isNotEmpty =>
+          FloatingActionButton.extended(
+            onPressed: () => showAddSharedExpenseSheet(
+              context,
+              group: group,
+              members: members,
+            ),
+            icon: const Icon(Icons.add),
+            label: const Text('Add expense'),
           ),
-        ),
-        icon: const Icon(Icons.add),
-        label: const Text('Add member'),
-      ),
+        _ => null,
+      },
     );
   }
 }
@@ -150,7 +154,91 @@ class _MemberList extends ConsumerWidget {
                   )
                 : null,
           ),
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: TextButton.icon(
+              onPressed: () => showNameSheet(
+                context,
+                title: 'Add a member',
+                label: 'Name',
+                action: 'Add',
+                onSave: (name) => ref.read(addPlaceholderMemberProvider)(
+                  groupId: group.id,
+                  name: name,
+                ),
+              ),
+              icon: const Icon(Icons.person_add_alt),
+              label: const Text('Add a member'),
+            ),
+          ),
+        ),
+        const Divider(),
+        _Expenses(group: group, members: members),
       ],
     );
+  }
+}
+
+/// The group's expenses, newest first (the full history comes in 4.3).
+class _Expenses extends ConsumerWidget {
+  const _Expenses({required this.group, required this.members});
+
+  final Group group;
+  final List<Member> members;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final names = {for (final m in members) m.id: m.displayName};
+    final categories = {
+      for (final c in ref.watch(categoriesProvider).value ?? const <Category>[])
+        c.id: c.name,
+    };
+    final header = Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      child: Text(
+        'Expenses',
+        style: theme.textTheme.labelLarge?.copyWith(
+          color: theme.colorScheme.primary,
+        ),
+      ),
+    );
+    return ref
+        .watch(sharedExpensesProvider(group.id))
+        .when(
+          data: (expenses) => Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              header,
+              if (expenses.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  child: Text('No expenses yet. Add the first one.'),
+                ),
+              for (final e in expenses)
+                ListTile(
+                  title: Text(
+                    categories[e.categoryId] ??
+                        '${e.shares.length}-way expense',
+                  ),
+                  subtitle: Text(
+                    'Paid by ${names[e.payerId] ?? 'a former member'} · '
+                    '${MaterialLocalizations.of(context).formatMediumDate(e.date)}',
+                  ),
+                  trailing: Text(const MoneyFormatter().format(e.amount)),
+                ),
+            ],
+          ),
+          error: (error, _) => LoadError(
+            message: failureMessage(error),
+            onRetry: () => ref.invalidate(sharedExpensesProvider(group.id)),
+          ),
+          loading: () => const Padding(
+            padding: EdgeInsets.all(24),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+        );
   }
 }
