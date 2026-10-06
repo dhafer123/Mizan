@@ -133,4 +133,40 @@ void main() {
       'displayName': 'Sami',
     });
   });
+
+  test('a payment the server refused leaves no trace on this phone', () async {
+    // Two phones undid the same payment offline; this one lost the race.
+    await db.settlementsDao.insertSettlement(
+      SettlementRow(
+        id: 'undo-2',
+        groupId: 'g1',
+        fromMemberId: 'you',
+        toMemberId: 'sami',
+        amountMinor: 450000,
+        currency: 'TND',
+        date: DateTime.utc(2026, 10, 6),
+        reversesId: 'p1',
+        version: 0,
+        deleted: false,
+      ),
+    );
+    server.handler = (r) => FakeHttpAdapter.json(200, {
+      'results': [
+        {
+          'opId': 'x',
+          'entity': 'settlements',
+          'entityId': 'undo-2',
+          'status': 'rejected',
+          'reason': 'already_reversed',
+          'state': null,
+        },
+      ],
+    });
+
+    await repo.push();
+
+    expect(await db.select(db.settlements).get(), isEmpty);
+    final refused = await db.select(db.outbox).getSingle();
+    expect(refused.rejectReason, 'already_reversed', reason: 'kept for the UI');
+  });
 }

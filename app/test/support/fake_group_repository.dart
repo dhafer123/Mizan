@@ -2,11 +2,13 @@ import 'package:mizan/core/result/result.dart';
 import 'package:mizan/features/groups/domain/entities/group.dart';
 import 'package:mizan/features/groups/domain/entities/history_entry.dart';
 import 'package:mizan/features/groups/domain/entities/member.dart';
+import 'package:mizan/features/groups/domain/entities/settlement.dart';
 import 'package:mizan/features/groups/domain/entities/shared_expense.dart';
 import 'package:mizan/features/groups/domain/repositories/group_repository.dart';
 import 'package:mizan/features/groups/domain/value_objects/group_error.dart';
 import 'package:mizan/features/groups/domain/value_objects/group_failure.dart';
 import 'package:mizan/features/groups/domain/value_objects/group_invite.dart';
+import 'package:mizan/features/groups/domain/value_objects/group_ledger.dart';
 import 'package:mizan/features/groups/domain/value_objects/invite_preview.dart';
 
 /// Groups in memory. Server calls answer [joinResult] and record their token.
@@ -15,6 +17,7 @@ class FakeGroupRepository implements GroupRepository {
   final members = <Member>[];
   final expenses = <SharedExpense>[];
   final history = <HistoryEntry>[];
+  final settlements = <Settlement>[];
   final tokens = <String>[];
   Result<String, GroupFailure> joinResult = const Ok('g1');
 
@@ -46,6 +49,29 @@ class FakeGroupRepository implements GroupRepository {
   @override
   Future<Result<void, GroupFailure>> addExpense(SharedExpense expense) async {
     expenses.add(expense);
+    return const Ok(null);
+  }
+
+  GroupLedger _ledger(String groupId) => GroupLedger(
+    expenses: expenses.where((e) => e.groupId == groupId).toList(),
+    settlements: settlements.reversed
+        .where((s) => s.groupId == groupId)
+        .toList(),
+  );
+
+  @override
+  Stream<Result<GroupLedger, GroupFailure>> watchLedger(String groupId) =>
+      Stream.value(Ok(_ledger(groupId)));
+
+  @override
+  Future<Result<GroupLedger, GroupFailure>> getLedger(String groupId) async =>
+      Ok(_ledger(groupId));
+
+  @override
+  Future<Result<void, GroupFailure>> addSettlement(
+    Settlement settlement,
+  ) async {
+    settlements.add(settlement);
     return const Ok(null);
   }
 

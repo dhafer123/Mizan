@@ -130,9 +130,10 @@ The money and group logic is built and proven first, with no UI, because everyth
   *Done when:* the balances match the domain tests for the same data.
   *Note:* Group screen has Balances / Expenses / History tabs. Balances are recomputed from rows on every change (`WatchGroupBalances` → `ComputeBalances`, never stored); `test/features/groups/data/group_balances_test.dart` stores the domain worked example through the real DB and use cases and gets +540 / −90 / −450. History is the pulled server history (only accepted changes; lost and discarded edits included), matched to the group by entity id since history rows carry no group, last 300 shown. Settlements join the balances in 4.4.
 
-- [ ] **4.4 Settle up**
+- [x] **4.4 Settle up**
   Suggested transfers from `simplifyDebts`, a "record payment" action, and a reversing settlement for mistakes.
   *Done when:* recording all the suggested payments brings every balance to 0 on both devices.
+  *Note:* "Settle up" tab: suggested payments (each "Record", amount editable for partial payments), any other payment, and the payment list with "Undo" (a reversing settlement; a payment is undone once, a reversal can't be undone). Schema v6 adds `settlements` (from shadows); balances now come from expenses + settlements. Proven by `test_e2e/join_group_e2e_test.dart` on a real server (all balances 0 on both phones). Sync fix: a create the server refuses and never stored (e.g. two phones undoing the same payment offline → `already_reversed`) is now removed locally; the simulation (now recording/undoing payments on phones) failed without it. See ADR 0008 addendum.
 
 - [ ] **4.5 Personal budget integration** (§4)
   Only **my share** counts as spending. What others owe me is shown separately.
@@ -237,4 +238,5 @@ The money and group logic is built and proven first, with no UI, because everyth
 - 2026-10-06: 3.6 — Pulled rows of entities without a local table yet are skipped while the cursor moves on (3.7: their shadows are kept in `server_rows`, so week 4's migration builds the new tables from them). The interceptor re-reads stored tokens before signing out, so WorkManager and the app can't log each other out by racing a refresh.
 - 2026-10-06: 4.1 — Groups and members can't be deleted yet (removing a member waits for 4.4: their balance must be 0). Groups need an account; the Groups screen is at `/groups`, from Home's app bar. 4.2/4.4 tables can build from `server_rows` like v4 did.
 - 2026-10-06: 4.2 — A shared expense's category is the payer's personal category id (built-ins are the same everywhere; a custom one shows only to its owner). Settlements still have no local table: 4.4 adds it (from shadows) and adds them to the simulation's on-phone balance check.
+- 2026-10-06: 4.4 — Removing members is still not possible (it needs a zero balance); left for later polish. The 3.7 simulation note is done: phones add shared expenses and record/undo payments, and group balances (with settlements) sum to 0 on every phone after every step.
 - 2026-10-06: 3.7 — Week 4 (4.2/4.4) must extend the simulation with shared expenses and settlements on devices and check group balances sum to 0 on every device. The client now keeps shadow server rows (schema v3); `DJANGO_CONN_MAX_AGE` defaults to 0.

@@ -15,6 +15,7 @@ import 'generated/schema_v2.dart' as v2;
 import 'generated/schema_v3.dart' as v3;
 import 'generated/schema_v4.dart' as v4;
 import 'generated/schema_v5.dart' as v5;
+import 'generated/schema_v6.dart' as v6;
 
 AppDatabase _open(QueryExecutor executor) => AppDatabase(
   executor,
@@ -188,6 +189,39 @@ void main() {
         });
         expect(jsonDecode(row.shares), {'m1': 4500, 'm2': 4500});
         expect((row.version, row.deleted, row.serverSeq), (1, 0, 12));
+      },
+    );
+  });
+
+  test('v5 → v6 builds settlements from their shadows', () async {
+    await verifier.testWithDataIntegrity(
+      oldVersion: 5,
+      newVersion: 6,
+      createOld: v5.DatabaseAtV5.new,
+      createNew: v6.DatabaseAtV6.new,
+      openTestedDatabase: _open,
+      createItems: (batch, oldDb) {
+        batch.insert(
+          oldDb.serverRows,
+          const v5.ServerRowsData(
+            entity: 'settlements',
+            entityId: 'p2',
+            state:
+                '{"id":"p2","groupId":"g1","fromMemberId":"m2",'
+                '"toMemberId":"m1","amountMinor":4500,"currency":"TND",'
+                '"date":"2026-10-06T00:00:00.000Z","reversesId":"p1",'
+                '"version":1,"deleted":false,"updatedBy":"7","serverSeq":20}',
+            serverSeq: 20,
+          ),
+        );
+      },
+      validateItems: (newDb) async {
+        final row = await newDb.select(newDb.settlements).getSingle();
+        expect(
+          (row.fromMemberId, row.toMemberId, row.amountMinor, row.reversesId),
+          ('m2', 'm1', 4500, 'p1'),
+        );
+        expect((row.date, row.serverSeq), ('2026-10-06T00:00:00.000Z', 20));
       },
     );
   });

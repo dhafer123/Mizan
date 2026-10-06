@@ -36,6 +36,7 @@ void main() {
     repo = GroupRepositoryImpl(
       db.groupsDao,
       db.sharedExpensesDao,
+      db.settlementsDao,
       GroupsApi(fakeDio(FakeHttpAdapter(FakeHttpAdapter.offline))),
     );
     await db.groupsDao.insertGroup(_group('flat'), _member('you', 'flat'));

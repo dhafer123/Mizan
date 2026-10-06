@@ -8,6 +8,7 @@ import '../../../budget/data/db/income_sources_dao.dart';
 import '../../../expenses/data/db/categories_dao.dart';
 import '../../../expenses/data/db/expenses_dao.dart';
 import '../../../groups/data/db/groups_dao.dart';
+import '../../../groups/data/db/settlements_dao.dart';
 import '../../../groups/data/db/shared_expenses_dao.dart';
 import '../../domain/usecases/rebase_row.dart';
 import '../remote/sync_api.dart';
@@ -31,7 +32,7 @@ class AccountChangedException implements Exception {
 ///
 /// Pulled rows bypass the outbox on purpose: they come *from* the server.
 /// Shadows are kept for entities this app version has no table for yet
-/// (settlements until 4.4), so the migration that adds
+/// (none since 4.4), so the migration that adds
 /// such a table can build its rows from them (ADR 0007).
 ///
 /// **Joining a group.** The group's older rows have seqs below the cursor,
@@ -149,8 +150,38 @@ class SyncLocalStore {
         await _saveShadow(entity, entityId, state, seq);
       }
     }
-    await _rebuild(entity, entityId);
+    if (!await _rebuild(entity, entityId)) {
+      await _dropIfOnlyLocal(entity, entityId);
+    }
   }
+
+  /// A row the server never had (no shadow) whose ops all left the queue
+  /// refused: it exists only here, so it goes. E.g. two phones reversing
+  /// the same payment offline: the second reversal is refused and must not
+  /// stay on its phone.
+  Future<void> _dropIfOnlyLocal(String entity, String id) async {
+    final table = _tables[entity];
+    if (table == null || await _shadow(entity, id) != null) return;
+    if ((await _db.outboxDao.queuedFor(entity, id)).isNotEmpty) return;
+    await _db.customUpdate(
+      'DELETE FROM "${table.actualTableName}" '
+      'WHERE id = ? AND server_seq IS NULL',
+      variables: [Variable.withString(id)],
+      updates: {table},
+      updateKind: UpdateKind.delete,
+    );
+  }
+
+  late final Map<String, TableInfo<Table, Object?>> _tables = {
+    ExpensesDao.entity: _db.expenses,
+    CategoriesDao.entity: _db.categories,
+    IncomeSourcesDao.entity: _db.incomeSources,
+    BudgetsDao.entity: _db.budgets,
+    GroupsDao.groupEntity: _db.groups,
+    GroupsDao.memberEntity: _db.members,
+    SharedExpensesDao.entity: _db.sharedExpenses,
+    SettlementsDao.entity: _db.settlements,
+  };
 
   Future<int?> _localServerSeq(
     String entity,
@@ -164,6 +195,7 @@ class SyncLocalStore {
     BudgetsDao.entity => (await _db.budgetsDao.findById(id))?.serverSeq,
     GroupsDao.groupEntity => (await _db.groupsDao.findGroup(id))?.serverSeq,
     GroupsDao.memberEntity => (await _db.groupsDao.findMember(id))?.serverSeq,
+    SettlementsDao.entity => (await _db.settlementsDao.findById(id))?.serverSeq,
     SharedExpensesDao.entity => (await _db.sharedExpensesDao.findById(
       id,
     ))?.serverSeq,
@@ -284,6 +316,15 @@ class SyncLocalStore {
                 serializer: syncSerializer,
               ).toCompanion(false),
             );
+      case SettlementsDao.entity:
+        await _db
+            .into(_db.settlements)
+            .insertOnConflictUpdate(
+              SettlementRow.fromJson(
+                row,
+                serializer: syncSerializer,
+              ).toCompanion(false),
+            );
       default:
         return false; // No table for it in this app version yet.
     }
@@ -339,6 +380,7 @@ class SyncLocalStore {
         _db.members,
         _db.groupBackfills,
         _db.sharedExpenses,
+        _db.settlements,
       ]) {
         await _db.delete(table).go();
       }

@@ -59,6 +59,9 @@ class GroupsDao extends DatabaseAccessor<AppDatabase> with _$GroupsDaoMixin {
     final expenseIds = selectOnly(db.sharedExpenses)
       ..addColumns([db.sharedExpenses.id])
       ..where(db.sharedExpenses.groupId.equals(groupId));
+    final settlementIds = selectOnly(db.settlements)
+      ..addColumns([db.settlements.id])
+      ..where(db.settlements.groupId.equals(groupId));
     final memberIds = selectOnly(members)
       ..addColumns([members.id])
       ..where(members.groupId.equals(groupId));
@@ -67,6 +70,8 @@ class GroupsDao extends DatabaseAccessor<AppDatabase> with _$GroupsDaoMixin {
             (h) =>
                 (h.entity.equals('shared_expenses') &
                     h.entityId.isInQuery(expenseIds)) |
+                (h.entity.equals('settlements') &
+                    h.entityId.isInQuery(settlementIds)) |
                 (h.entity.equals(memberEntity) &
                     h.entityId.isInQuery(memberIds)) |
                 (h.entity.equals(groupEntity) & h.entityId.equals(groupId)),
@@ -74,6 +79,26 @@ class GroupsDao extends DatabaseAccessor<AppDatabase> with _$GroupsDaoMixin {
           ..orderBy([(h) => OrderingTerm.desc(h.serverSeq)])
           ..limit(historyLimit))
         .watch();
+  }
+
+  /// A group's live expenses and settlements, read together whenever either
+  /// table changes: what its balances are computed from.
+  Stream<(List<SharedExpenseRow>, List<SettlementRow>)> watchLedger(
+    String groupId,
+  ) async* {
+    final db = attachedDatabase;
+    Future<(List<SharedExpenseRow>, List<SettlementRow>)> read() => transaction(
+      () async => (
+        await db.sharedExpensesDao.getGroup(groupId),
+        await db.settlementsDao.getGroup(groupId),
+      ),
+    );
+    yield await read();
+    await for (final _ in db.tableUpdates(
+      TableUpdateQuery.onAllTables([db.sharedExpenses, db.settlements]),
+    )) {
+      yield await read();
+    }
   }
 
   /// The most history rows shown for one group.

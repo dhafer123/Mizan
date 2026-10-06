@@ -5,8 +5,8 @@ import '../repositories/group_repository.dart';
 import '../value_objects/group_balances.dart';
 import 'compute_balances.dart';
 
-/// A group's balances, recomputed from its rows on every change (never
-/// stored). Settlements join in 4.4.
+/// A group's balances, recomputed from its expenses and settlements on
+/// every change (never stored).
 class WatchGroupBalances {
   const WatchGroupBalances(
     this._repository, [
@@ -22,14 +22,14 @@ class WatchGroupBalances {
     required Currency currency,
     Set<String> memberIds = const {},
   }) => _repository
-      .watchExpenses(groupId)
+      .watchLedger(groupId)
       .map(
-        (expenses) => switch (expenses) {
+        (ledger) => switch (ledger) {
           Err(:final failure) => Err(failure),
-          Ok(value: final expenses) => switch (_computeBalances(
+          Ok(value: final ledger) => switch (_computeBalances(
             currency: currency,
-            expenses: expenses,
-            settlements: const [],
+            expenses: ledger.expenses,
+            settlements: ledger.settlements,
             memberIds: memberIds,
           )) {
             Ok(:final value) => Ok(GroupBalances(value)),

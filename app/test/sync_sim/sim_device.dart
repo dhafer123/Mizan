@@ -24,6 +24,10 @@ import 'package:mizan/features/expenses/domain/usecases/validate_expense.dart';
 import 'package:mizan/features/groups/data/remote/groups_api.dart';
 import 'package:mizan/features/groups/data/repositories/group_repository_impl.dart';
 import 'package:mizan/features/groups/domain/usecases/add_shared_expense.dart';
+import 'package:mizan/features/groups/domain/usecases/record_settlement.dart';
+import 'package:mizan/features/groups/domain/usecases/reverse_settlement.dart';
+import 'package:mizan/features/groups/domain/usecases/simplify_debts.dart';
+import 'package:mizan/features/groups/domain/usecases/watch_group_balances.dart';
 import 'package:mizan/features/groups/domain/value_objects/split.dart';
 import 'package:mizan/features/sync/data/remote/sync_api.dart';
 import 'package:mizan/features/sync/data/repositories/sync_repository_impl.dart';
@@ -69,11 +73,16 @@ class SimDevice {
     setBudget = SetMonthlyBudget(
       BudgetRepositoryImpl(db.budgetsDao, currency: Currency.tnd),
     );
-    addSharedExpense = AddSharedExpense(
-      GroupRepositoryImpl(db.groupsDao, db.sharedExpensesDao, GroupsApi(dio)),
-      ids,
-      clock,
+    final groups = GroupRepositoryImpl(
+      db.groupsDao,
+      db.sharedExpensesDao,
+      db.settlementsDao,
+      GroupsApi(dio),
     );
+    addSharedExpense = AddSharedExpense(groups, ids, clock);
+    recordSettlement = RecordSettlement(groups, ids, clock);
+    reverseSettlement = ReverseSettlement(groups, ids, clock);
+    watchBalances = WatchGroupBalances(groups);
   }
 
   final String name;
@@ -91,6 +100,9 @@ class SimDevice {
   late final CategoryRepositoryImpl categoryRepository;
   late final SetMonthlyBudget setBudget;
   late final AddSharedExpense addSharedExpense;
+  late final RecordSettlement recordSettlement;
+  late final ReverseSettlement reverseSettlement;
+  late final WatchGroupBalances watchBalances;
 
   /// Every op this phone ever queued, by op id (outbox snapshots: an op
   /// stays in the outbox until the server takes it, so none are missed).
@@ -156,6 +168,60 @@ class SimDevice {
       split: split,
     );
     return 'shared ${split.type.name} '
+        '${result.valueOrNull?.id ?? result.failureOrNull}';
+  }
+
+  /// Settling up in [groupId] through the app's use cases: record the first
+  /// suggested payment (sometimes only part of it), a random payment, or
+  /// undo a payment. Two phones may undo the same one offline; the server
+  /// refuses the second.
+  Future<String> randomSettleUp(String groupId) async {
+    final ids = [for (final m in await db.groupsDao.getMembers(groupId)) m.id]
+      ..sort();
+    if (ids.length < 2) return 'settle: no group here yet';
+    final roll = random.nextInt(4);
+    if (roll == 0) {
+      final ledger = await db.settlementsDao.getGroup(groupId);
+      final undoable = ledger
+          .where(
+            (s) =>
+                s.reversesId == null &&
+                !ledger.any((r) => r.reversesId == s.id),
+          )
+          .toList();
+      if (undoable.isNotEmpty) {
+        final s = undoable[random.nextInt(undoable.length)];
+        final result = await reverseSettlement(
+          groupId: groupId,
+          settlementId: s.id,
+        );
+        return 'undo ${s.id} ${result.valueOrNull?.id ?? result.failureOrNull}';
+      }
+    }
+    var from = ids[random.nextInt(ids.length)];
+    var to = ids.firstWhere((id) => id != from);
+    var amount = Money(100 + random.nextInt(30000), Currency.tnd);
+    if (roll != 1) {
+      final balances = (await watchBalances(
+        groupId,
+        currency: Currency.tnd,
+      ).first).valueOrNull!;
+      final transfers = const SimplifyDebts()(balances.byMember).valueOrNull!;
+      if (transfers.isNotEmpty) {
+        final t = transfers.first;
+        (from, to) = (t.fromMemberId, t.toMemberId);
+        amount = random.nextBool() || t.amount.minorUnits < 2
+            ? t.amount
+            : Money(1 + random.nextInt(t.amount.minorUnits - 1), Currency.tnd);
+      }
+    }
+    final result = await recordSettlement(
+      groupId: groupId,
+      fromMemberId: from,
+      toMemberId: to,
+      amount: amount,
+    );
+    return 'pay $from→$to ${amount.minorUnits} '
         '${result.valueOrNull?.id ?? result.failureOrNull}';
   }
 

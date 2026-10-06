@@ -47,3 +47,10 @@ Fixing 2 and 3 properly took a design change in the client. **The client keeps a
 - The fake server must follow `push.py` and `pull.py`. The real-server run in CI is what catches it drifting.
 - Week 4 adds group tables. Since shadows are kept for every entity, including ones without a table yet, that migration can **build the new tables' rows from `server_rows`** instead of resetting the cursor (this replaces the cursor-reset note in ADR 0007). Then this harness gets an on-device group-balance check. TASKS.md has the note.
 - Every pulled row is stored twice, once as the row and once as its shadow. For a student's data that's a few hundred KB at most.
+
+## Addendum (task 4.4): a refused create leaves nothing behind
+
+The client rebuilds a row from its shadow plus the queue. A row the server never accepted has no shadow, so when its only op is refused, there was nothing to rebuild from. The refused row then stayed on that phone forever. This was harmless while refusals of creates were rare. Settlements made it real: two phones undo the same payment offline, and the server refuses the second reversal (`already_reversed`). That phone kept showing a reversal no one else has.
+
+Now, when an op leaves the queue and its row has no shadow, no queued ops left and no `serverSeq`, the row is deleted (`SyncLocalStore._dropIfOnlyLocal`). The refused op itself stays in the outbox with its reason, so the UI still counts it. The simulation now records and undoes payments on phones, and it found this: with the cleanup disabled, 2 in 300 scenarios diverge on `settlements`. `group_sync_test.dart` has the regression test.
+

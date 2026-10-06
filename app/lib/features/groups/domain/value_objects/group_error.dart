@@ -11,6 +11,18 @@ enum GroupError {
   /// The payer isn't a member of the group.
   unknownMember,
 
+  /// A payment to oneself.
+  sameMember,
+
+  /// Not the group's currency.
+  currencyMismatch,
+
+  /// A payment of zero or less.
+  amountNotPositive,
+
+  /// The payment is already reversed, or is itself a reversal.
+  notReversible,
+
   /// Groups are shared through the server: they need an account.
   signedOut,
 

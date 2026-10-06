@@ -9,6 +9,7 @@ import 'package:mizan/core/money/currency.dart';
 import 'package:mizan/core/money/money.dart';
 import 'package:mizan/core/result/failure.dart';
 import 'package:mizan/core/result/result.dart';
+import 'package:mizan/features/groups/data/mappers/settlement_mapper.dart';
 import 'package:mizan/features/groups/data/mappers/shared_expense_mapper.dart';
 import 'package:mizan/features/groups/domain/entities/settlement.dart';
 import 'package:mizan/features/groups/domain/entities/shared_expense.dart';
@@ -50,6 +51,7 @@ const _synced = {
   'groups',
   'members',
   'shared_expenses',
+  'settlements',
 };
 
 /// One random scenario: 2–3 phones of one account make random edits, push
@@ -167,9 +169,11 @@ class SyncScenario {
     if (roll < 45) {
       // On the fake server this account is in a group: some edits are
       // shared expenses.
-      what = fake != null && random.nextInt(4) == 0
-          ? await d.randomSharedExpense(FakeSyncServer.groupId)
-          : await d.randomEdit();
+      what = switch (fake == null ? -1 : random.nextInt(8)) {
+        0 || 1 => await d.randomSharedExpense(FakeSyncServer.groupId),
+        2 => await d.randomSettleUp(FakeSyncServer.groupId),
+        _ => await d.randomEdit(),
+      };
       await d.rememberOutbox();
     } else if (roll < 58) {
       await d.rememberOutbox();
@@ -248,6 +252,9 @@ class SyncScenario {
       ]..sort(),
       'shared_expenses': [
         for (final r in await d.db.select(d.db.sharedExpenses).get()) canon(r),
+      ]..sort(),
+      'settlements': [
+        for (final r in await d.db.select(d.db.settlements).get()) canon(r),
       ]..sort(),
       'entity_history': [
         for (final r in await d.db.select(d.db.entityHistory).get()) canon(r),
@@ -470,15 +477,15 @@ class SyncScenario {
         reason: 'money: budget ${b.id} limit',
       );
     }
-    // Group balances on this phone, from its own rows, sum to 0. (The
-    // settlements table comes in 4.4; until then, expenses alone.)
+    // Group balances on this phone, from its own rows, sum to 0.
     final shared = await (d.db.select(
       d.db.sharedExpenses,
     )..where((e) => e.deleted.not())).get();
+    final paid = await d.db.select(d.db.settlements).get();
     final balances = const ComputeBalances()(
       currency: Currency.tnd,
       expenses: [for (final r in shared) SharedExpenseMapper.toDomain(r)],
-      settlements: const [],
+      settlements: [for (final r in paid) SettlementMapper.toDomain(r)],
     );
     expect(balances.isOk, isTrue, reason: 'money: ${d.name} $balances');
     final sum = balances.valueOrNull!.values.fold(

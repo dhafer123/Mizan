@@ -2,9 +2,11 @@ import '../../../../core/result/result.dart';
 import '../entities/group.dart';
 import '../entities/history_entry.dart';
 import '../entities/member.dart';
+import '../entities/settlement.dart';
 import '../entities/shared_expense.dart';
 import '../value_objects/group_failure.dart';
 import '../value_objects/group_invite.dart';
+import '../value_objects/group_ledger.dart';
 import '../value_objects/invite_preview.dart';
 
 /// Groups and members on this device (written offline, queued for sync),
@@ -31,6 +33,16 @@ abstract interface class GroupRepository {
   );
 
   Future<Result<void, GroupFailure>> addExpense(SharedExpense expense);
+
+  /// A group's live expenses and settlements, re-emitted when either
+  /// changes.
+  Stream<Result<GroupLedger, GroupFailure>> watchLedger(String groupId);
+
+  /// [watchLedger], read once.
+  Future<Result<GroupLedger, GroupFailure>> getLedger(String groupId);
+
+  /// Settlements are insert-only: there is no update or delete.
+  Future<Result<void, GroupFailure>> addSettlement(Settlement settlement);
 
   /// The group's history (the group, its members and expenses), newest
   /// first, re-emitted on every change. Only changes the server accepted.

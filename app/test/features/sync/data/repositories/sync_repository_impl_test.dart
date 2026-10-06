@@ -504,7 +504,7 @@ void main() {
               },
             },
             {
-              'entity': 'settlements',
+              'entity': 'receipts',
               'serverSeq': 4,
               'state': {'id': 's-1'},
             },
@@ -529,7 +529,7 @@ void main() {
 
         final result = await repo.pull(accountId: 'u1');
 
-        expect(result.valueOrNull, 4, reason: 'settlements have no table yet');
+        expect(result.valueOrNull, 4, reason: 'no table for receipts');
         expect((await db.select(db.categories).getSingle()).name, 'Groceries');
         expect(
           (await db.select(db.incomeSources).getSingle()).date,

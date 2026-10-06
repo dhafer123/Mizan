@@ -10,7 +10,9 @@ import '../../domain/entities/member.dart';
 import '../../domain/entities/shared_expense.dart';
 import '../../domain/value_objects/group_balances.dart';
 import '../../domain/value_objects/group_invite.dart';
+import '../../domain/value_objects/group_ledger.dart';
 import '../../domain/value_objects/invite_preview.dart';
+import '../../domain/value_objects/transfer.dart';
 
 part 'group_data_providers.g.dart';
 
@@ -51,6 +53,19 @@ Stream<GroupBalances> groupBalances(Ref ref, String groupId) async* {
         memberIds: {for (final m in members) m.id},
       )
       .map(_orThrow);
+}
+
+/// The group's expenses and payments.
+@Riverpod(retry: noRetry)
+Stream<GroupLedger> groupLedger(Ref ref, String groupId) =>
+    ref.watch(watchGroupLedgerProvider)(groupId).map(_orThrow);
+
+/// The fewest payments that settle everyone (`SimplifyDebts`), from the
+/// current balances.
+@Riverpod(retry: noRetry)
+Future<List<Transfer>> suggestedTransfers(Ref ref, String groupId) async {
+  final balances = await ref.watch(groupBalancesProvider(groupId).future);
+  return _orThrow(ref.watch(simplifyDebtsProvider)(balances.byMember));
 }
 
 /// Who changed what, newest first.

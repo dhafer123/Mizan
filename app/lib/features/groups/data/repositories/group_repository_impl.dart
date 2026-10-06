@@ -1,30 +1,41 @@
 import 'package:dio/dio.dart';
 
+import '../../../../app/db/app_database.dart';
 import '../../../../core/result/result.dart';
 import '../../../../core/result/storage_errors_as_failures.dart';
 import '../../domain/entities/group.dart';
 import '../../domain/entities/history_entry.dart';
 import '../../domain/entities/member.dart';
+import '../../domain/entities/settlement.dart';
 import '../../domain/entities/shared_expense.dart';
 import '../../domain/repositories/group_repository.dart';
 import '../../domain/value_objects/group_error.dart';
 import '../../domain/value_objects/group_failure.dart';
 import '../../domain/value_objects/group_invite.dart';
+import '../../domain/value_objects/group_ledger.dart';
 import '../../domain/value_objects/invite_preview.dart';
 import '../db/groups_dao.dart';
+import '../db/settlements_dao.dart';
 import '../db/shared_expenses_dao.dart';
 import '../mappers/group_mapper.dart';
 import '../mappers/history_mapper.dart';
+import '../mappers/settlement_mapper.dart';
 import '../mappers/shared_expense_mapper.dart';
 import '../remote/groups_api.dart';
 
 /// [GroupRepository] over the local tables (writes queue sync ops) and the
 /// server's invite endpoints. Nothing is thrown past this class.
 class GroupRepositoryImpl implements GroupRepository {
-  const GroupRepositoryImpl(this._dao, this._expenses, this._api);
+  const GroupRepositoryImpl(
+    this._dao,
+    this._expenses,
+    this._settlements,
+    this._api,
+  );
 
   final GroupsDao _dao;
   final SharedExpensesDao _expenses;
+  final SettlementsDao _settlements;
   final GroupsApi _api;
 
   static const _storage = GroupFailure(GroupError.storage);
@@ -94,6 +105,29 @@ class GroupRepositoryImpl implements GroupRepository {
   Future<Result<void, GroupFailure>> addExpense(SharedExpense expense) =>
       _write(
         () => _expenses.insertSharedExpense(SharedExpenseMapper.toRow(expense)),
+      );
+
+  @override
+  Stream<Result<GroupLedger, GroupFailure>> watchLedger(String groupId) => _dao
+      .watchLedger(groupId)
+      .map<Result<GroupLedger, GroupFailure>>((rows) => Ok(_ledger(rows)))
+      .transform(storageErrorsAsFailures(_storage));
+
+  @override
+  Future<Result<GroupLedger, GroupFailure>> getLedger(String groupId) =>
+      _read(() async => _ledger(await _dao.watchLedger(groupId).first));
+
+  static GroupLedger _ledger(
+    (List<SharedExpenseRow>, List<SettlementRow>) rows,
+  ) => GroupLedger(
+    expenses: [for (final row in rows.$1) SharedExpenseMapper.toDomain(row)],
+    settlements: [for (final row in rows.$2) SettlementMapper.toDomain(row)],
+  );
+
+  @override
+  Future<Result<void, GroupFailure>> addSettlement(Settlement settlement) =>
+      _write(
+        () => _settlements.insertSettlement(SettlementMapper.toRow(settlement)),
       );
 
   @override

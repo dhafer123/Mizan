@@ -45,10 +45,13 @@ class HistoryText {
     final what = switch (e.entity) {
       'shared_expenses' => 'an expense',
       'members' => _byMember[e.entityId] ?? 'a member',
+      'settlements' => 'a payment',
       _ => 'the group',
     };
     return switch (e.kind) {
       ChangeKind.created when e.entity == 'groups' => '$who created the group',
+      ChangeKind.created when e.entity == 'settlements' =>
+        '$who recorded a payment',
       ChangeKind.created => '$who added $what',
       ChangeKind.deleted => '$who deleted $what',
       ChangeKind.restored => '$who restored $what',

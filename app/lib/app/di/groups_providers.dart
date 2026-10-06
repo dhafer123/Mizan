@@ -10,9 +10,13 @@ import '../../features/groups/domain/usecases/create_group.dart';
 import '../../features/groups/domain/usecases/create_invite.dart';
 import '../../features/groups/domain/usecases/join_group.dart';
 import '../../features/groups/domain/usecases/preview_invite.dart';
+import '../../features/groups/domain/usecases/record_settlement.dart';
+import '../../features/groups/domain/usecases/reverse_settlement.dart';
+import '../../features/groups/domain/usecases/simplify_debts.dart';
 import '../../features/groups/domain/usecases/watch_group.dart';
 import '../../features/groups/domain/usecases/watch_group_balances.dart';
 import '../../features/groups/domain/usecases/watch_group_history.dart';
+import '../../features/groups/domain/usecases/watch_group_ledger.dart';
 import '../../features/groups/domain/usecases/watch_groups.dart';
 import '../../features/groups/domain/usecases/watch_members.dart';
 import '../../features/groups/domain/usecases/watch_shared_expenses.dart';
@@ -27,6 +31,7 @@ part 'groups_providers.g.dart';
 GroupRepository groupRepository(Ref ref) => GroupRepositoryImpl(
   ref.watch(appDatabaseProvider).groupsDao,
   ref.watch(appDatabaseProvider).sharedExpensesDao,
+  ref.watch(appDatabaseProvider).settlementsDao,
   GroupsApi(ref.watch(apiDioProvider)),
 );
 
@@ -87,3 +92,24 @@ WatchGroupBalances watchGroupBalances(Ref ref) =>
 @Riverpod(keepAlive: true)
 WatchGroupHistory watchGroupHistory(Ref ref) =>
     WatchGroupHistory(ref.watch(groupRepositoryProvider));
+
+@Riverpod(keepAlive: true)
+SimplifyDebts simplifyDebts(Ref ref) => const SimplifyDebts();
+
+@Riverpod(keepAlive: true)
+RecordSettlement recordSettlement(Ref ref) => RecordSettlement(
+  ref.watch(groupRepositoryProvider),
+  ref.watch(idGeneratorProvider),
+  ref.watch(clockProvider),
+);
+
+@Riverpod(keepAlive: true)
+ReverseSettlement reverseSettlement(Ref ref) => ReverseSettlement(
+  ref.watch(groupRepositoryProvider),
+  ref.watch(idGeneratorProvider),
+  ref.watch(clockProvider),
+);
+
+@Riverpod(keepAlive: true)
+WatchGroupLedger watchGroupLedger(Ref ref) =>
+    WatchGroupLedger(ref.watch(groupRepositoryProvider));

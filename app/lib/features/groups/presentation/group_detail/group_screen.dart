@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../expenses/presentation/shared/failure_message.dart';
 import '../../domain/entities/group.dart';
 import '../add_expense/add_shared_expense_sheet.dart';
+import '../settle_up/settle_up_tab.dart';
 import '../shared/group_data_providers.dart';
 import '../shared/load_error.dart';
 import 'balances_tab.dart';
@@ -11,8 +12,8 @@ import 'expenses_tab.dart';
 import 'history_tab.dart';
 import 'invite_sheet.dart';
 
-/// A group: who owes what (balances, with members), its expenses, and its
-/// edit history. Invite people, add placeholders, add expenses.
+/// A group: who owes what (balances, with members), how to settle up, its
+/// expenses, and its edit history. Invite people, add placeholders, add expenses.
 class GroupScreen extends ConsumerWidget {
   const GroupScreen({required this.groupId, super.key});
 
@@ -59,7 +60,7 @@ class _Loaded extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final members = ref.watch(membersProvider(group.id)).value;
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         appBar: AppBar(
           title: Text(group.name),
@@ -73,6 +74,7 @@ class _Loaded extends ConsumerWidget {
           bottom: const TabBar(
             tabs: [
               Tab(text: 'Balances'),
+              Tab(text: 'Settle up'),
               Tab(text: 'Expenses'),
               Tab(text: 'History'),
             ],
@@ -81,6 +83,7 @@ class _Loaded extends ConsumerWidget {
         body: TabBarView(
           children: [
             BalancesTab(group: group),
+            SettleUpTab(group: group),
             ExpensesTab(group: group),
             HistoryTab(group: group),
           ],

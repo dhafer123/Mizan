@@ -21,13 +21,20 @@ class SharedExpensesDao extends DatabaseAccessor<AppDatabase>
 
   /// A group's live expenses, newest first, re-emitted on every change.
   Stream<List<SharedExpenseRow>> watchGroup(String groupId) =>
-      (select(sharedExpenses)
-            ..where((e) => e.groupId.equals(groupId) & e.deleted.not())
-            ..orderBy([
-              (e) => OrderingTerm.desc(e.date),
-              (e) => OrderingTerm.desc(e.id),
-            ]))
-          .watch();
+      _group(groupId).watch();
+
+  /// [watchGroup], read once.
+  Future<List<SharedExpenseRow>> getGroup(String groupId) =>
+      _group(groupId).get();
+
+  SimpleSelectStatement<$SharedExpensesTable, SharedExpenseRow> _group(
+    String groupId,
+  ) => select(sharedExpenses)
+    ..where((e) => e.groupId.equals(groupId) & e.deleted.not())
+    ..orderBy([
+      (e) => OrderingTerm.desc(e.date),
+      (e) => OrderingTerm.desc(e.id),
+    ]);
 
   Future<void> insertSharedExpense(SharedExpenseRow row) =>
       attachedDatabase.outboxDao.recordWrite(

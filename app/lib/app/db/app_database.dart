@@ -16,6 +16,8 @@ import '../../features/groups/data/db/group_backfills_table.dart';
 import '../../features/groups/data/db/groups_dao.dart';
 import '../../features/groups/data/db/groups_table.dart';
 import '../../features/groups/data/db/members_table.dart';
+import '../../features/groups/data/db/settlements_dao.dart';
+import '../../features/groups/data/db/settlements_table.dart';
 import '../../features/groups/data/db/shared_expenses_dao.dart';
 import '../../features/groups/data/db/shared_expenses_table.dart';
 import '../../features/sync/data/db/entity_history_table.dart';
@@ -49,6 +51,7 @@ part 'app_database.g.dart';
     Members,
     GroupBackfills,
     SharedExpenses,
+    Settlements,
   ],
   daos: [
     ExpensesDao,
@@ -59,6 +62,7 @@ part 'app_database.g.dart';
     SyncStateDao,
     GroupsDao,
     SharedExpensesDao,
+    SettlementsDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -84,7 +88,7 @@ class AppDatabase extends _$AppDatabase {
   final Clock clock;
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -153,6 +157,27 @@ class AppDatabase extends _$AppDatabase {
             json_extract(state, '\$.deleted'),
             json_extract(state, '\$.updatedBy'), server_seq
           FROM server_rows WHERE entity = 'shared_expenses'
+        ''');
+      },
+      // 4.4: settlements, built from their shadows like v4 and v5.
+      from5To6: (m, schema) async {
+        await m.createTable(schema.settlements);
+        await m.createIndex(schema.settlementsGroup);
+        await customStatement('''
+          INSERT INTO settlements (id, group_id, from_member_id, to_member_id,
+            amount_minor, currency, date, reverses_id, version, deleted,
+            updated_by, server_seq)
+          SELECT entity_id, json_extract(state, '\$.groupId'),
+            json_extract(state, '\$.fromMemberId'),
+            json_extract(state, '\$.toMemberId'),
+            json_extract(state, '\$.amountMinor'),
+            json_extract(state, '\$.currency'),
+            json_extract(state, '\$.date'),
+            json_extract(state, '\$.reversesId'),
+            json_extract(state, '\$.version'),
+            json_extract(state, '\$.deleted'),
+            json_extract(state, '\$.updatedBy'), server_seq
+          FROM server_rows WHERE entity = 'settlements'
         ''');
       },
     ),

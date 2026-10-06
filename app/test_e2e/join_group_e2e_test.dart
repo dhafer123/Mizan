@@ -31,6 +31,9 @@ import 'package:mizan/features/groups/domain/usecases/create_group.dart';
 import 'package:mizan/features/groups/domain/usecases/create_invite.dart';
 import 'package:mizan/features/groups/domain/usecases/join_group.dart';
 import 'package:mizan/features/groups/domain/usecases/preview_invite.dart';
+import 'package:mizan/features/groups/domain/usecases/record_settlement.dart';
+import 'package:mizan/features/groups/domain/usecases/simplify_debts.dart';
+import 'package:mizan/features/groups/domain/usecases/watch_group_balances.dart';
 import 'package:mizan/features/groups/domain/value_objects/split.dart';
 import 'package:mizan/features/sync/data/remote/sync_api.dart';
 import 'package:mizan/features/sync/data/repositories/sync_repository_impl.dart';
@@ -88,6 +91,7 @@ class _Phone {
     final groups = GroupRepositoryImpl(
       db.groupsDao,
       db.sharedExpensesDao,
+      db.settlementsDao,
       GroupsApi(apiDio),
     );
     return _Phone._(db, account, groups, sync, apiDio);
@@ -97,6 +101,17 @@ class _Phone {
     final result = await SyncNow(_sync, _clock)(accountId: account.id);
     expect(result.isOk, isTrue, reason: '$result');
   }
+
+  Future<Map<String, int>> balances(String groupId) async =>
+      (await WatchGroupBalances(groups)(
+        groupId,
+        currency: Currency.tnd,
+      ).first).valueOrNull!.byMember.map((id, m) => MapEntry(id, m.minorUnits));
+
+  Future<void> expectNothingRefused() async => expect(
+    (await db.select(db.outbox).get()).where((o) => o.rejectReason != null),
+    isEmpty,
+  );
 
   Future<Map<String, String?>> members(String groupId) async => {
     for (final m in await (db.select(
@@ -200,6 +215,36 @@ void main() {
       for (final e in onSami) {
         final total = e.shares.values.fold<int>(0, (a, b) => a + (b! as int));
         expect(total, 100001);
+      }
+
+      // Settle up (4.4): Sami's phone records every suggested payment; after
+      // both phones sync, every balance is 0 on both.
+      final before = await sami.balances(group.id);
+      expect(before.values.any((b) => b != 0), isTrue);
+      expect(await ali.balances(group.id), before, reason: 'same data');
+      final transfers = const SimplifyDebts()({
+        for (final MapEntry(:key, :value) in before.entries)
+          key: Money(value, Currency.tnd),
+      }).valueOrNull!;
+      final record = RecordSettlement(sami.groups, _ids, _clock);
+      for (final t in transfers) {
+        final paid = await record(
+          groupId: group.id,
+          fromMemberId: t.fromMemberId,
+          toMemberId: t.toMemberId,
+          amount: t.amount,
+        );
+        expect(paid.isOk, isTrue, reason: '$paid');
+      }
+      await sami.sync();
+      await ali.sync();
+      await sami.expectNothingRefused();
+      for (final phone in [sami, ali]) {
+        expect(
+          (await phone.balances(group.id)).values.toSet(),
+          {0},
+          reason: 'every balance settled on ${phone.account.displayName}',
+        );
       }
     },
     skip: _serverUrl == null ? 'Set MIZAN_E2E_URL to run' : false,

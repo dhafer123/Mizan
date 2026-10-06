@@ -15,7 +15,7 @@ void main() {
       row.read<String>('name'),
   ];
 
-  test('creates every table at schema version 5', () async {
+  test('creates every table at schema version 6', () async {
     final tables = await db
         .customSelect(
           "SELECT name FROM sqlite_master WHERE type = 'table' "
@@ -24,7 +24,7 @@ void main() {
         .map((row) => row.read<String>('name'))
         .get();
 
-    expect(db.schemaVersion, 5);
+    expect(db.schemaVersion, 6);
     expect(tables, [
       'budget_category_limits',
       'budgets',
@@ -37,6 +37,7 @@ void main() {
       'members',
       'outbox',
       'server_rows',
+      'settlements',
       'shared_expenses',
       'sync_state',
     ]);
@@ -52,6 +53,7 @@ void main() {
       'groups',
       'members',
       'shared_expenses',
+      'settlements',
     ]) {
       expect(
         await columns(table),
