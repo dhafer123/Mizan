@@ -1,6 +1,7 @@
 name: e2e
 
-# The real app sync client against a real server (app/test_e2e).
+# The real app sync client against a real server (app/test_e2e): the
+# airplane-mode test (3.6) and the sync simulation's scenarios (3.7).
 on:
   push:
     paths: [app/**, server/**, .github/workflows/e2e.yml]
@@ -69,10 +70,13 @@ jobs:
           flutter pub get
           dart run build_runner build --force-jit
 
-      - name: Airplane mode → 5 edits → online
+      - name: Airplane mode → 5 edits → online, and the sync simulation
         working-directory: app
         env:
           MIZAN_E2E_URL: http://127.0.0.1:8000
+          # Random multi-device scenarios against the real server, checking
+          # the in-memory fake (1000 per run in the app job) didn't drift.
+          SYNC_SIM_REAL_SCENARIOS: "50"
         run: flutter test test_e2e
 
       - name: Server log on failure

@@ -4,8 +4,13 @@ import 'package:dio/dio.dart';
 
 import '../../../../app/db/app_database.dart';
 
-/// One op's outcome from `/sync/push`.
-typedef PushResult = ({String status, String? reason});
+/// One op's outcome from `/sync/push`, with the server's current row when
+/// the user may see it.
+typedef PushResult = ({
+  String status,
+  String? reason,
+  Map<String, Object?>? state,
+});
 
 /// One row from `/sync/pull`: the server's state of an entity (or a
 /// history entry), in the app's sync JSON.
@@ -64,6 +69,10 @@ class SyncApi {
           {'status': final String status} => (
             status: status,
             reason: result['reason'] as String?,
+            state: switch (result['state']) {
+              final Map<String, Object?> state => state,
+              _ => null,
+            },
           ),
           _ => throw const FormatException('Bad result'),
         },

@@ -136,6 +136,7 @@ All synced entities also carry the sync metadata: `version`, `deleted` (tombston
   - `outbox`: `opId` (UUID), `entity`, `entityId`, `opType` (create / update / delete), `changedFields` (JSON), `baseVersion`, `createdAt`, `attempts`, `status`.
   - `sync_state`: `cursor` (last `serverSeq` pulled), `lastSyncAt`.
   - `entity_history`: change log shown in the UI ("Ali changed amount 120 → 150").
+  - `server_rows`: each synced row as the server last sent it. The row the UI shows is that plus the still-queued outbox ops, rebuilt whenever either changes (ADR 0008).
 - Every user action runs in **one transaction**: write the entity **and** append to the outbox. This is the core offline-first guarantee: no change is ever made without being queued for sync.
 - Balances and totals are **never stored**. They are computed from rows (and cached in memory if needed).
 

@@ -69,6 +69,14 @@ class SyncRepositoryImpl implements SyncRepository {
         await _db.transaction(() async {
           await _db.outboxDao.removeAcknowledged(done);
           await _db.outboxDao.markRejected(refused);
+          // These ops left the queue: rebuild their rows from the server's.
+          for (final (i, result) in results.indexed) {
+            await _store.applyPushResult(
+              ops[i].entity,
+              ops[i].entityId,
+              result.state,
+            );
+          }
         });
         accepted += done.length;
         rejected += refused.length;

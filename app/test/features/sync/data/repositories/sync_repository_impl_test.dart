@@ -1,10 +1,12 @@
 import 'package:dio/dio.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mizan/app/db/app_database.dart';
 import 'package:mizan/core/clock/fake_clock.dart';
 import 'package:mizan/core/result/result.dart';
 import 'package:mizan/features/sync/data/db/outbox_op_type.dart';
 import 'package:mizan/features/sync/data/db/outbox_status.dart';
+import 'package:mizan/features/sync/data/db/pending_op.dart';
 import 'package:mizan/features/sync/data/db/sync_payload.dart';
 import 'package:mizan/features/sync/data/remote/sync_api.dart';
 import 'package:mizan/features/sync/data/repositories/sync_repository_impl.dart';
@@ -116,6 +118,122 @@ void main() {
         expect((op['changedFields'] as Map)['amountMinor'], 4500);
       },
     );
+
+    test(
+      'a refused edit is replaced by the server row it came back with',
+      () async {
+        // Regression (found by test/sync_sim): an edit rebased onto a pulled
+        // tombstone, then rejected, used to stay on the phone for good.
+        await db
+            .into(db.expenses)
+            .insert(_expense('a', version: 2, serverSeq: 19, deleted: true));
+        await db.expensesDao.insertExpense(_expense('b'));
+        await db.outboxDao.recordWrite(
+          const PendingOp(
+            entity: 'expenses',
+            entityId: 'a',
+            type: OutboxOpType.update,
+            changedFields: {'amountMinor': 9999, 'note': 'mine'},
+            baseVersion: 1,
+          ),
+          () => (db.update(db.expenses)..where((e) => e.id.equals('a'))).write(
+            const ExpensesCompanion(
+              amountMinor: Value(9999),
+              note: Value('mine'),
+            ),
+          ),
+        );
+        server.handler = (_) => FakeHttpAdapter.json(200, {
+          'results': [
+            {'status': 'applied'},
+            {
+              'status': 'rejected',
+              'reason': 'deleted',
+              'state': _expense(
+                'a',
+                version: 2,
+                serverSeq: 19,
+                deleted: true,
+              ).toJson(serializer: syncSerializer),
+            },
+          ],
+        });
+
+        await repo.push();
+
+        final row = await db.expensesDao.findById('a');
+        expect((row!.amountMinor, row.note, row.deleted), (4500, null, true));
+      },
+    );
+
+    test('a replayed rejection older than the local row is ignored', () async {
+      await db
+          .into(db.expenses)
+          .insert(_expense('a', amount: 7000, version: 3, serverSeq: 30));
+      await db.expensesDao.updateExpense(
+        _expense('a', amount: 7100, version: 3, serverSeq: 30),
+      );
+      server.handler = (_) => FakeHttpAdapter.json(200, {
+        'results': [
+          {
+            'status': 'rejected',
+            'reason': 'deleted',
+            'state': _expense(
+              'a',
+              version: 2,
+              serverSeq: 19,
+              deleted: true,
+            ).toJson(serializer: syncSerializer),
+          },
+        ],
+      });
+
+      await repo.push();
+
+      final row = await db.expensesDao.findById('a');
+      expect((row!.serverSeq, row.deleted), (30, false));
+    });
+
+    test('a retried op whose first answer was lost: the newer server row '
+        'wins once it leaves the queue', () async {
+      // Regression (found by test/sync_sim): the op's values used to stay
+      // on top of a newer server row after the replayed ack.
+      await db.expensesDao.insertExpense(_expense('a', note: 'mine'));
+      server.handler = (r) => r.path == SyncApi.pullPath
+          ? FakeHttpAdapter.json(
+              200,
+              _page([
+                _change(
+                  _expense('a', note: 'theirs', version: 2, serverSeq: 9),
+                ),
+              ], cursor: 9),
+            )
+          : FakeHttpAdapter.json(200, {
+              'results': [
+                // The replayed first answer: older than what was pulled.
+                {
+                  'status': 'applied',
+                  'state': _expense(
+                    'a',
+                    note: 'mine',
+                    version: 1,
+                    serverSeq: 7,
+                  ).toJson(serializer: syncSerializer),
+                },
+              ],
+            });
+      await repo.pull(accountId: 'u1');
+      expect(
+        (await db.expensesDao.findById('a'))!.note,
+        'mine',
+        reason: 'still queued: shown on top',
+      );
+
+      await repo.push();
+
+      final row = await db.expensesDao.findById('a');
+      expect((row!.note, row.serverSeq), ('theirs', 9));
+    });
 
     test('in batches of 200, oldest first', () async {
       await db.batch((b) {
@@ -244,6 +362,28 @@ void main() {
         200,
         200,
       ]);
+    });
+
+    test('a value cleared on the server is cleared here', () async {
+      // Regression (found by test/sync_sim): a plain upsert dropped nulls.
+      server.handler = (r) => FakeHttpAdapter.json(
+        200,
+        r.queryParameters['since'] == 0
+            ? _page([
+                _change(
+                  _expense('a', note: 'old note', version: 1, serverSeq: 1),
+                ),
+              ], cursor: 1)
+            : _page([
+                _change(_expense('a', version: 2, serverSeq: 2)),
+              ], cursor: 2),
+      );
+
+      await repo.pull(accountId: 'u1');
+      expect((await db.expensesDao.findById('a'))!.note, 'old note');
+      await repo.pull(accountId: 'u1');
+
+      expect((await db.expensesDao.findById('a'))!.note, isNull);
     });
 
     test('pulled rows do not go into the outbox', () async {

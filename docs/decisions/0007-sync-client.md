@@ -20,7 +20,8 @@ The server side is done: push and its conflict rules (ADR 0006), and gap-free pu
 - **Pull.** Pages follow the cursor until `hasMore` is false. Each page is applied in one drift transaction, together with its cursor. A failure leaves the cursor where it was, so the page is pulled again.
   - **Rebase:** before a pulled row is written, any ops for it still pending or sending are laid on top (`rebaseRow`). An unsynced local edit stays visible; it was based on the old version, and the server merges it when it's pushed. Rejected ops are not re-applied, so the server's row wins.
   - The page is applied only while the local data still belongs to the account being synced. Otherwise it fails with `accountChanged`, and the scheduler starts over for the new account.
-  - Rows for entities this app version has no table for yet (groups, members, shared expenses, settlements until week 4) are skipped, but the cursor still moves past them. **So the migration that adds such a table must reset `sync_state.cursor` to 0**, and the next pull fetches everything again. Applying a row is an upsert, so that's safe.
+  - Rows for entities this app version has no table for yet (groups, members, shared expenses, settlements until week 4) get no local row, but the cursor still moves past them. *Superseded by ADR 0008:* their shadows are kept in `server_rows`, so the migration that adds such a table builds its rows from those instead of resetting the cursor.
+  - *Changed by ADR 0008:* rows are rebuilt from a shadow copy of the server's row plus the queue, instead of being overwritten in place, and again whenever an op leaves the outbox.
 - **When** (`SyncScheduler`, pure Dart, tested with fake timers):
   - when an account signs in;
   - when the network comes back (`connectivity_plus`);
@@ -58,5 +59,5 @@ It runs in CI (`.github/workflows/e2e.yml`, with Postgres and Django), and local
 ## Consequences
 
 - Background sync costs battery and data every 15 minutes while signed in. WorkManager's network constraint and the OS's own batching keep that low.
-- When week 4 adds group tables, its migration must reset the cursor (see Pull).
+- When week 4 adds group tables, its migration builds their rows from `server_rows` (ADR 0008).
 - A rejected op stays in the outbox for the UI. Nothing clears old rejections yet; a "dismiss" action can come with the polish in 6.2.

@@ -17,6 +17,7 @@ import '../../features/sync/data/db/outbox_dao.dart';
 import '../../features/sync/data/db/outbox_op_type.dart';
 import '../../features/sync/data/db/outbox_status.dart';
 import '../../features/sync/data/db/outbox_table.dart';
+import '../../features/sync/data/db/server_rows_table.dart';
 import '../../features/sync/data/db/sync_state_dao.dart';
 import '../../features/sync/data/db/sync_state_table.dart';
 import 'app_database.steps.dart';
@@ -37,6 +38,7 @@ part 'app_database.g.dart';
     Outbox,
     SyncState,
     EntityHistory,
+    ServerRows,
   ],
   daos: [
     ExpensesDao,
@@ -70,7 +72,7 @@ class AppDatabase extends _$AppDatabase {
   final Clock clock;
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -81,6 +83,11 @@ class AppDatabase extends _$AppDatabase {
         await m.addColumn(schema.syncState, schema.syncState.accountId);
         await m.addColumn(schema.entityHistory, schema.entityHistory.kind);
         await m.addColumn(schema.outbox, schema.outbox.rejectReason);
+      },
+      // 3.7: shadow copies of server rows (rebuild after an op leaves the
+      // queue). Existing rows have none yet; the next pull fills them.
+      from2To3: (m, schema) async {
+        await m.createTable(schema.serverRows);
       },
     ),
     beforeOpen: (details) => customStatement('PRAGMA foreign_keys = ON'),

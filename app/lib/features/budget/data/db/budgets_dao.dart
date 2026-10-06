@@ -37,9 +37,10 @@ class BudgetsDao extends DatabaseAccessor<AppDatabase> with _$BudgetsDaoMixin {
           changedFields: syncPayload(row),
           baseVersion: 0,
         ),
-        () => into(
-          budgets,
-        ).insertOnConflictUpdate(row.copyWith(version: 0, deleted: false)),
+        () => into(budgets).insertOnConflictUpdate(
+          // Explicit nulls: re-saving a month with no limit must clear it.
+          row.copyWith(version: 0, deleted: false).toCompanion(false),
+        ),
       );
       return true;
     }

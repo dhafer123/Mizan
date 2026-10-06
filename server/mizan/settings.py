@@ -68,7 +68,11 @@ DATABASES = {
         "PORT": env("POSTGRES_PORT", "5432"),
         # Each sync op runs in its own explicit transaction (§6), not one per request.
         "ATOMIC_REQUESTS": False,
-        "CONN_MAX_AGE": 60,
+        # Persistent connections only with a fixed pool of worker threads. The
+        # dev server (and anything thread-per-request) leaks one per thread
+        # and runs Postgres out of slots; the sync simulation hit that. 0 =
+        # close after each request (Django's default).
+        "CONN_MAX_AGE": int(env("DJANGO_CONN_MAX_AGE", "0")),
         "CONN_HEALTH_CHECKS": True,
     }
 }

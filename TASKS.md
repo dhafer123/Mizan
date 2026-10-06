@@ -104,9 +104,10 @@ The money and group logic is built and proven first, with no UI, because everyth
   *Done when:* an integration test does airplane mode → 5 edits → online, and the server has all 5.
   *Note:* Added connectivity_plus + workmanager (approved). The proof is `app/test_e2e/` against a real Django server (CI job `e2e`), not an on-device integration_test. Account switch = wipe and pull (decided with the user); first sign-in uploads local-only data. Schema v2 (`sync_state.account_id`, `entity_history.kind`, `outbox.reject_reason`). See ADR 0007.
 
-- [ ] **3.7 Sync simulation harness** (§11)
+- [x] **3.7 Sync simulation harness** (§11)
   2–3 fake clients plus an in-memory fake server that follows the same rules. Random ops, random offline periods, random push/pull order.
   *Done when:* 1,000 random scenarios per CI run all satisfy the 4 invariants (convergence, no lost writes, money integrity, idempotency).
+  *Note:* The clients run the app's real sync stack (drift, repositories, use cases); only time and the network are fake, with lost push responses. Same scenarios also run against the real Django server (50 in the `e2e` job). Found and fixed 4 bugs: pulled nulls not clearing, rejected edits stuck on tombstones, stale values after a lost-response replay (→ shadow rows, schema v3), and DB connection exhaustion (`CONN_MAX_AGE`). Money integrity on devices covers personal data; group balances are checked on the server (decided with the user). See ADR 0008.
 
 **Gate 3:** the same account on 2 devices (or emulator + phone) converges after conflicting offline edits, and the simulation is green.
 
@@ -230,4 +231,5 @@ The money and group logic is built and proven first, with no UI, because everyth
 - 2026-10-06: 3.3 — Personal rows keyed by (owner, entity_id), group rows by entity_id, applied ops by (user, op_id). `budget_category_limits` not mirrored (unused since 2.4). Ledger writes are serialized globally by the seq lock (fine at this scale; ADR 0005 names the alternative).
 - 2026-10-06: 3.4 — The app must send `deviceId` with every push (3.6), and should send `amountMinor`, `split` and `shares` together when any of them changes (4.2): the server checks the merged row and rejects `shares_mismatch` otherwise. Unknown fields are rejected, so app/server field drift fails loudly.
 - 2026-10-06: 3.5 — Joining a group later needs a backfill: rows written before the joiner's cursor never come through a normal pull. 4.1 must send the group's current rows on join (e.g. a group-scoped `since=0` pull). Removed members get their own member tombstone, then nothing more from the group.
-- 2026-10-06: 3.6 — Pulled rows of entities without a local table yet are skipped while the cursor moves on: week 4's migration that adds group tables must reset the cursor to 0. The interceptor re-reads stored tokens before signing out, so WorkManager and the app can't log each other out by racing a refresh.
+- 2026-10-06: 3.6 — Pulled rows of entities without a local table yet are skipped while the cursor moves on (3.7: their shadows are kept in `server_rows`, so week 4's migration builds the new tables from them). The interceptor re-reads stored tokens before signing out, so WorkManager and the app can't log each other out by racing a refresh.
+- 2026-10-06: 3.7 — Week 4 (4.2/4.4) must extend the simulation with shared expenses and settlements on devices and check group balances sum to 0 on every device. The client now keeps shadow server rows (schema v3); `DJANGO_CONN_MAX_AGE` defaults to 0.

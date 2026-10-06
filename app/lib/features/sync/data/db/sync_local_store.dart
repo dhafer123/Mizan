@@ -16,14 +16,21 @@ class AccountChangedException implements Exception {
   const AccountChangedException();
 }
 
-/// Writes pulled changes into the local tables, and owns which account the
+/// Writes server rows into the local tables, and owns which account the
 /// synced data belongs to.
 ///
+/// Every server row is kept as a shadow (`server_rows`), and the row the app
+/// shows is always that shadow with the still-queued local ops on top
+/// (`rebaseRow`). Rows are rebuilt from the shadow when a pull brings a new
+/// version and when a pushed op leaves the outbox, so no local value
+/// outlives the op that made it. Overwriting rows in place was not enough:
+/// a retried push whose first answer was lost left the op's values on top
+/// of a newer server row for good (found by the sync simulation, 3.7).
+///
 /// Pulled rows bypass the outbox on purpose: they come *from* the server.
-/// Rows of entities this app version has no table for yet (groups, members,
-/// shared expenses, settlements until week 4) are skipped; the migration
-/// that adds such a table must reset the cursor to 0 so they are pulled
-/// again (ADR 0007).
+/// Shadows are kept for entities this app version has no table for yet
+/// (group data until week 4), so the migration that adds such a table can
+/// build its rows from them (ADR 0007).
 class SyncLocalStore {
   SyncLocalStore(this._db);
 
@@ -31,9 +38,15 @@ class SyncLocalStore {
 
   static const historyEntity = 'entity_history';
 
+  // Upserts take companions built with `toCompanion(false)`: every column
+  // explicit, nulls included. A row passed as is would drop its nulls from
+  // the ON CONFLICT update, so a value cleared on the server (a removed
+  // limit, an emptied note) would never be cleared here. The sync
+  // simulation (test/sync_sim) caught that.
+
   /// Applies one pull page and moves the cursor, in one transaction, only if
   /// the data still belongs to [accountId]. Returns how many changes it
-  /// applied. Throws [AccountChangedException].
+  /// applied to local tables. Throws [AccountChangedException].
   Future<int> applyPage(
     PullPage page, {
     required String accountId,
@@ -49,58 +62,131 @@ class SyncLocalStore {
     return applied;
   });
 
+  /// A pushed op for this row left the outbox (accepted or refused). Takes
+  /// the server row it came back with, unless the shadow is newer (a
+  /// retried op replays its first, older answer), and rebuilds the row.
+  Future<void> applyPushResult(
+    String entity,
+    String entityId,
+    Map<String, Object?>? state,
+  ) async {
+    final seq = state?['serverSeq'];
+    if (state != null && seq is int && state['id'] == entityId) {
+      // Rows pulled before schema v3 have no shadow: compare with the row.
+      final known =
+          (await _shadow(entity, entityId))?.serverSeq ??
+          await _localServerSeq(entity, entityId);
+      if (known == null || known <= seq) {
+        await _saveShadow(entity, entityId, state, seq);
+      }
+    }
+    await _rebuild(entity, entityId);
+  }
+
+  Future<int?> _localServerSeq(String entity, String id) async =>
+      switch (entity) {
+        ExpensesDao.entity => (await _db.expensesDao.findById(id))?.serverSeq,
+        CategoriesDao.entity => (await _db.categoriesDao.findById(
+          id,
+        ))?.serverSeq,
+        IncomeSourcesDao.entity => (await _db.incomeSourcesDao.findById(
+          id,
+        ))?.serverSeq,
+        BudgetsDao.entity => (await _db.budgetsDao.findById(id))?.serverSeq,
+        _ => null,
+      };
+
   Future<bool> _apply(PulledChange change) async {
     if (change.entity == historyEntity) {
       await _db
           .into(_db.entityHistory)
-          .insertOnConflictUpdate(_historyRow(change.state));
+          .insertOnConflictUpdate(_historyRow(change.state).toCompanion(false));
       return true;
     }
-    final row = await _rebased(change);
-    switch (change.entity) {
+    final id = change.state['id'];
+    if (id is! String) throw const FormatException('Pulled row without id');
+    await _saveShadow(change.entity, id, change.state, change.serverSeq);
+    return _rebuild(change.entity, id);
+  }
+
+  Future<ServerRow?> _shadow(String entity, String id) =>
+      (_db.select(_db.serverRows)
+            ..where((r) => r.entity.equals(entity) & r.entityId.equals(id)))
+          .getSingleOrNull();
+
+  Future<void> _saveShadow(
+    String entity,
+    String id,
+    Map<String, Object?> state,
+    int serverSeq,
+  ) => _db
+      .into(_db.serverRows)
+      .insertOnConflictUpdate(
+        ServerRow(
+          entity: entity,
+          entityId: id,
+          state: jsonEncode(state),
+          serverSeq: serverSeq,
+        ),
+      );
+
+  /// The local row = the shadow + queued ops. Without a shadow (never
+  /// synced) the local row is left as it is. Returns whether a local table
+  /// was written.
+  Future<bool> _rebuild(String entity, String id) async {
+    final shadow = await _shadow(entity, id);
+    if (shadow == null) return false;
+    final queued = await _db.outboxDao.queuedFor(entity, id);
+    final row =
+        rebaseRow((jsonDecode(shadow.state) as Map).cast<String, Object?>(), [
+          for (final op in queued)
+            (
+              opType: op.opType.name,
+              changedFields: (jsonDecode(op.changedFields) as Map)
+                  .cast<String, Object?>(),
+            ),
+        ]);
+    switch (entity) {
       case ExpensesDao.entity:
         await _db
             .into(_db.expenses)
             .insertOnConflictUpdate(
-              ExpenseRow.fromJson(row, serializer: syncSerializer),
+              ExpenseRow.fromJson(
+                row,
+                serializer: syncSerializer,
+              ).toCompanion(false),
             );
       case CategoriesDao.entity:
         await _db
             .into(_db.categories)
             .insertOnConflictUpdate(
-              CategoryRow.fromJson(row, serializer: syncSerializer),
+              CategoryRow.fromJson(
+                row,
+                serializer: syncSerializer,
+              ).toCompanion(false),
             );
       case IncomeSourcesDao.entity:
         await _db
             .into(_db.incomeSources)
             .insertOnConflictUpdate(
-              IncomeSourceRow.fromJson(row, serializer: syncSerializer),
+              IncomeSourceRow.fromJson(
+                row,
+                serializer: syncSerializer,
+              ).toCompanion(false),
             );
       case BudgetsDao.entity:
         await _db
             .into(_db.budgets)
             .insertOnConflictUpdate(
-              BudgetRow.fromJson(row, serializer: syncSerializer),
+              BudgetRow.fromJson(
+                row,
+                serializer: syncSerializer,
+              ).toCompanion(false),
             );
       default:
         return false; // No table for it in this app version yet.
     }
     return true;
-  }
-
-  /// The server's row with this phone's still-queued changes on top.
-  Future<Map<String, Object?>> _rebased(PulledChange change) async {
-    final id = change.state['id'];
-    if (id is! String) throw const FormatException('Pulled row without id');
-    final queued = await _db.outboxDao.queuedFor(change.entity, id);
-    return rebaseRow(change.state, [
-      for (final op in queued)
-        (
-          opType: op.opType.name,
-          changedFields: (jsonDecode(op.changedFields) as Map)
-              .cast<String, Object?>(),
-        ),
-    ]);
   }
 
   static EntityHistoryRow _historyRow(Map<String, Object?> json) {
@@ -147,6 +233,7 @@ class SyncLocalStore {
         _db.budgetCategoryLimits,
         _db.outbox,
         _db.entityHistory,
+        _db.serverRows,
       ]) {
         await _db.delete(table).go();
       }
