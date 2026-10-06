@@ -4,6 +4,7 @@ All configuration comes from environment variables (see `.env.example`).
 """
 
 import os
+from datetime import timedelta
 from pathlib import Path
 
 from django.core.exceptions import ImproperlyConfigured
@@ -38,6 +39,7 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.auth",
     "rest_framework",
+    "rest_framework_simplejwt.token_blacklist",
     "accounts",
     "ledger",
     "sync",
@@ -45,7 +47,7 @@ INSTALLED_APPS = [
     "notifications",
 ]
 
-# API only: no sessions, CSRF cookies or templates. Auth is JWT (task 3.2).
+# API only: no sessions, CSRF cookies or templates. Auth is JWT.
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -89,8 +91,25 @@ REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     "DEFAULT_PARSER_CLASSES": ["rest_framework.parsers.JSONParser"],
     # Closed by default; endpoints that don't need a user opt out explicitly.
-    "DEFAULT_AUTHENTICATION_CLASSES": [],
+    "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework_simplejwt.authentication.JWTAuthentication"],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
+    "EXCEPTION_HANDLER": "mizan.errors.api_exception_handler",
+    # Password guessing: login and sign-up share one per-IP budget.
+    "DEFAULT_THROTTLE_RATES": {"auth": env("AUTH_THROTTLE_RATE", "20/min")},
+}
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
+    # Refresh is handled by accounts.services.refresh_tokens, which rotates and
+    # blacklists the old refresh token itself; these keep simplejwt consistent.
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+    # Tokens carry a hash of the password, so changing it signs out every device.
+    "CHECK_REVOKE_TOKEN": True,
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "USER_ID_FIELD": "id",
+    "USER_ID_CLAIM": "user_id",
 }
 
 LOGGING = {

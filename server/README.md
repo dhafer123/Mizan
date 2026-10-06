@@ -4,11 +4,25 @@ Django REST Framework + PostgreSQL. Design: `docs/ARCHITECTURE.md` §6 (sync) an
 
 | App | Responsibility |
 |---|---|
-| `accounts` | Users, JWT auth, devices (task 3.2) |
+| `accounts` | Users (email login), JWT auth, devices |
 | `ledger` | Server copies of synced entities, `version`, `server_seq` (3.3) |
 | `sync` | `/sync/push`, `/sync/pull`, applied-op log, conflict policy (3.4–3.5) |
 | `groups` | Groups, members, invites (4.1) |
 | `notifications` | FCM pushes (4.6) |
+
+## API
+
+| Endpoint | |
+|---|---|
+| `GET /health` | Liveness + database check. Public. |
+| `POST /auth/signup` | `{email, password, displayName?, device?}` → 201 `{user, access, refresh}` |
+| `POST /auth/login` | `{email, password, device?}` → `{user, access, refresh}`; 401 `invalid_credentials` |
+| `POST /auth/refresh` | `{refresh}` → `{access, refresh}` (each refresh token works once); 401 `token_not_valid` |
+| `POST /auth/logout` | `{refresh, deviceId?}` → 204, revokes the token and forgets the device |
+| `GET /auth/me` | `Authorization: Bearer <access>` → `{id, email, displayName}` |
+
+`device` is `{id: uuid, platform: "android" | "ios", name?}`. Errors are always
+`{"code", "detail", "fields"?}`; see `mizan/errors.py` and ADR 0004.
 
 ## Run with Docker
 

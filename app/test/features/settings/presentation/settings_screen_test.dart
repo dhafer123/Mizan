@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mizan/app/di/auth_providers.dart';
 import 'package:mizan/app/di/core_providers.dart';
 import 'package:mizan/app/di/expenses_providers.dart';
 import 'package:mizan/app/di/settings_providers.dart';
@@ -17,6 +18,7 @@ import 'package:mizan/features/settings/domain/value_objects/settings_failure.da
 import 'package:mizan/features/settings/presentation/pin/pin_setup_screen.dart';
 import 'package:mizan/features/settings/presentation/settings_screen.dart';
 
+import '../../../support/fake_auth_repository.dart';
 import '../../../support/fake_biometric_authenticator.dart';
 import '../../../support/fake_category_repository.dart';
 import '../../../support/fake_expense_repository.dart';
@@ -70,6 +72,7 @@ Future<_Setup> _pump(WidgetTester tester, [_Setup? setup]) async {
         categoryRepositoryProvider.overrideWithValue(
           FakeCategoryRepository(DefaultCategories.all),
         ),
+        authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
       ],
       child: MaterialApp.router(routerConfig: router),
     ),
@@ -98,6 +101,7 @@ void main() {
 
     await tester.pumpAndSettle();
 
+    expect(find.text('Sign in to sync'), findsOneWidget);
     expect(_isOn(tester, 'App lock'), isFalse);
     expect(find.text('Change PIN'), findsNothing);
     expect(find.text('Export expenses'), findsOneWidget);

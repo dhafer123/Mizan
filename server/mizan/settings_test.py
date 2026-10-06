@@ -2,7 +2,7 @@
 
 import os
 
-os.environ.setdefault("DJANGO_SECRET_KEY", "test-only-not-a-secret")
+os.environ.setdefault("DJANGO_SECRET_KEY", "test-only-not-a-secret-but-at-least-32-bytes")
 
 from .settings import *  # noqa: E402,F403
 

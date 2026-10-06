@@ -5,12 +5,14 @@ import 'package:go_router/go_router.dart';
 import '../../../app/di/settings_providers.dart';
 import '../../../app/router/app_router.dart';
 import '../../../core/result/result.dart';
+import '../../auth/presentation/account_section.dart';
 import '../../expenses/presentation/shared/failure_message.dart';
 import '../domain/value_objects/lock_status.dart';
 import 'lock/app_lock_controller.dart';
 import 'lock/lock_status_provider.dart';
 
-/// The app lock (PIN, biometrics) and exporting expenses.
+/// The account (sign in / log out), the app lock (PIN, biometrics) and
+/// exporting expenses.
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
@@ -144,6 +146,8 @@ class _SettingsListState extends ConsumerState<_SettingsList> {
         bottom: 24 + MediaQuery.paddingOf(context).bottom,
       ),
       children: [
+        header('Account'),
+        const AccountSection(),
         header('Security'),
         SwitchListTile(
           value: status.enabled,
