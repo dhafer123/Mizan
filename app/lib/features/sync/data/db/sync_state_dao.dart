@@ -19,6 +19,18 @@ class SyncStateDao extends DatabaseAccessor<AppDatabase>
       )..where((s) => s.id.equals(_rowId))).getSingleOrNull() ??
       const SyncStateRow(id: _rowId, cursor: 0);
 
+  /// Marks the synced data as [accountId]'s; [resetCursor] also forgets the
+  /// cursor and last sync (after a wipe).
+  Future<void> claim(String accountId, {required bool resetCursor}) =>
+      into(syncState).insertOnConflictUpdate(
+        SyncStateCompanion.insert(
+          id: const Value(_rowId),
+          accountId: Value(accountId),
+          cursor: resetCursor ? const Value(0) : const Value.absent(),
+          lastSyncAt: resetCursor ? const Value(null) : const Value.absent(),
+        ),
+      );
+
   /// Records a finished pull. Call inside the transaction that applied it.
   Future<void> saveCursor(int cursor, DateTime syncedAt) =>
       into(syncState).insertOnConflictUpdate(

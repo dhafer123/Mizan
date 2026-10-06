@@ -3,8 +3,9 @@ import 'stored_session.dart';
 /// Where the session and this install's device id are kept. Methods throw
 /// on storage errors; callers in the data layer turn them into failures.
 abstract interface class SessionStore {
-  /// Null when signed out.
-  Future<StoredSession?> read();
+  /// Null when signed out. [fresh] skips any cache and reads storage: the
+  /// background sync isolate may have refreshed the tokens meanwhile.
+  Future<StoredSession?> read({bool fresh = false});
 
   Future<void> write(StoredSession session);
 

@@ -8,6 +8,12 @@ class EntityHistory extends Table {
   TextColumn get id => text()();
   TextColumn get entity => text()();
   TextColumn get entityId => text()();
+
+  /// `created`, `changed`, `overwritten` (lost a same-field conflict),
+  /// `deleted`, `restored` or `discarded` (an edit that came after a delete).
+  TextColumn get kind => text().withDefault(const Constant('changed'))();
+
+  /// Empty for whole-row events (created, deleted, restored).
   TextColumn get field => text()();
 
   /// JSON-encoded values; null when the field was unset.

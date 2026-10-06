@@ -12,7 +12,9 @@ import 'auth_api.dart';
 ///   retry. That matters because a refresh token works only once.
 /// - If the server rejects the refresh token (revoked, expired, password
 ///   changed), the session is over: [onSessionExpired] signs out locally and
-///   the original 401 is passed on.
+///   the original 401 is passed on. Unless storage now holds a different
+///   refresh token: another isolate (background sync) refreshed first, so
+///   the request is retried with that pair.
 /// - If the refresh can't reach the server, the session is kept and the
 ///   original error is passed on; the next request tries again.
 /// - A retried request that fails again is passed on as is (no loop).
@@ -64,19 +66,27 @@ class AuthInterceptor extends QueuedInterceptor {
       return handler.next(err);
     }
 
-    var session = await _readSession();
-    if (session == null) return handler.next(err); // Signed out meanwhile.
+    final current = await _readSession();
+    if (current == null) return handler.next(err); // Signed out meanwhile.
+    var session = current;
 
     // Still the token that failed: this request is the first to notice.
-    if (sent == _bearer(session.tokens.access)) {
+    if (sent == _bearer(current.tokens.access)) {
       try {
-        final tokens = await _api.refresh(session.tokens.refresh);
-        session = session.copyWith(tokens: tokens);
+        final tokens = await _api.refresh(current.tokens.refresh);
+        session = current.copyWith(tokens: tokens);
         await _store.write(session);
       } on DioException catch (e) {
         final status = e.response?.statusCode;
-        if (status == 400 || status == 401) await _onSessionExpired();
-        return handler.next(err);
+        if (status != 400 && status != 401) return handler.next(err);
+        // Refresh tokens work once. If another isolate (background sync)
+        // refreshed first, ours was just used up: take the stored new pair.
+        final stored = await _readSession(fresh: true);
+        if (stored == null || stored.tokens.refresh == current.tokens.refresh) {
+          await _onSessionExpired();
+          return handler.next(err);
+        }
+        session = stored;
       } on Object {
         // A bad response body or a storage error: keep the session.
         return handler.next(err);
@@ -94,9 +104,9 @@ class AuthInterceptor extends QueuedInterceptor {
     }
   }
 
-  Future<StoredSession?> _readSession() async {
+  Future<StoredSession?> _readSession({bool fresh = false}) async {
     try {
-      return await _store.read();
+      return await _store.read(fresh: fresh);
     } on Object {
       return null; // Unreadable storage: send without a token.
     }

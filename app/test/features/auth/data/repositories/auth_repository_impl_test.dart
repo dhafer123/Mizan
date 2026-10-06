@@ -224,7 +224,7 @@ class _GatedReadStore extends FakeSessionStore {
   final release = Completer<void>();
 
   @override
-  Future<StoredSession?> read() async {
+  Future<StoredSession?> read({bool fresh = false}) async {
     final session = this.session;
     await release.future;
     return session;

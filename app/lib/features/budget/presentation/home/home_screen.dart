@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/app_router.dart';
 import '../../../expenses/presentation/expense_sheet/expense_sheet.dart';
 import '../../../expenses/presentation/shared/failure_message.dart';
+import '../../../sync/presentation/sync_status_button.dart';
 import '../../domain/value_objects/dashboard.dart';
 import 'dashboard_provider.dart';
 import 'money_left_card.dart';
@@ -22,6 +23,7 @@ class HomeScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Mizan'),
         actions: [
+          const SyncStatusButton(),
           IconButton(
             onPressed: () => context.push(AppRoutes.expenses),
             icon: const Icon(Icons.receipt_long_outlined),

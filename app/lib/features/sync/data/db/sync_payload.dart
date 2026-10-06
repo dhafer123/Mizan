@@ -3,14 +3,16 @@ import 'package:drift/drift.dart';
 /// Sync metadata keys: set by the server, never sent in an op.
 const syncMetadataFields = {'version', 'deleted', 'updatedBy', 'serverSeq'};
 
-const _serializer = ValueSerializer.defaults(
+/// The JSON form of synced rows, shared with the server: dates as ISO-8601
+/// strings. Use it to read pulled rows back too (`Row.fromJson`).
+const syncSerializer = ValueSerializer.defaults(
   serializeDateTimeValuesAsString: true,
 );
 
 /// A row's syncable fields as JSON-encodable values (dates as ISO-8601),
 /// keyed by Dart field name.
 Map<String, Object?> syncPayload(DataClass row) =>
-    row.toJson(serializer: _serializer)
+    row.toJson(serializer: syncSerializer)
       ..removeWhere((key, _) => syncMetadataFields.contains(key));
 
 /// The fields whose values differ between two versions of a row.

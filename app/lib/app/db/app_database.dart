@@ -19,6 +19,7 @@ import '../../features/sync/data/db/outbox_status.dart';
 import '../../features/sync/data/db/outbox_table.dart';
 import '../../features/sync/data/db/sync_state_dao.dart';
 import '../../features/sync/data/db/sync_state_table.dart';
+import 'app_database.steps.dart';
 
 part 'app_database.g.dart';
 
@@ -49,10 +50,15 @@ part 'app_database.g.dart';
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor, {required this.ids, required this.clock});
 
-  /// The on-device database file, opened in a background isolate.
+  /// The on-device database file, opened in a background isolate. Shared
+  /// across isolates, so background sync (WorkManager) and the app use one
+  /// connection instead of two writers.
   factory AppDatabase.open({required IdGenerator ids, required Clock clock}) =>
       AppDatabase(
-        driftDatabase(name: 'mizan'),
+        driftDatabase(
+          name: 'mizan',
+          native: const DriftNativeOptions(shareAcrossIsolates: true),
+        ),
         ids: ids,
         clock: clock,
       );
@@ -64,11 +70,19 @@ class AppDatabase extends _$AppDatabase {
   final Clock clock;
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) => m.createAll(),
+    onUpgrade: stepByStep(
+      // 3.6: sync client. The cursor stays: nothing was pulled before v2.
+      from1To2: (m, schema) async {
+        await m.addColumn(schema.syncState, schema.syncState.accountId);
+        await m.addColumn(schema.entityHistory, schema.entityHistory.kind);
+        await m.addColumn(schema.outbox, schema.outbox.rejectReason);
+      },
+    ),
     beforeOpen: (details) => customStatement('PRAGMA foreign_keys = ON'),
   );
 }

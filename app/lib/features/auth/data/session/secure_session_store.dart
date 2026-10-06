@@ -25,8 +25,10 @@ class SecureSessionStore implements SessionStore {
   String? _deviceId;
 
   @override
-  Future<StoredSession?> read() async {
-    if (_cache case (:final session)) return session;
+  Future<StoredSession?> read({bool fresh = false}) async {
+    if (!fresh) {
+      if (_cache case (:final session)) return session;
+    }
     final raw = await _storage.read(key: sessionKey);
     StoredSession? session;
     if (raw != null) {

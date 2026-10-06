@@ -34,3 +34,12 @@ docker compose up          # Postgres + API on http://localhost:8000/health
 ```
 
 See [server/README.md](server/README.md) for running tests on the host.
+
+## End-to-end sync test
+
+With the server running (above, or `python manage.py runserver` on the host):
+
+```bash
+cd app
+MIZAN_E2E_URL=http://127.0.0.1:8000 flutter test test_e2e
+```

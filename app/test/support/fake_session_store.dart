@@ -17,7 +17,7 @@ class FakeSessionStore implements SessionStore {
   }
 
   @override
-  Future<StoredSession?> read() async {
+  Future<StoredSession?> read({bool fresh = false}) async {
     _maybeThrow();
     return session;
   }

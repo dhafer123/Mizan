@@ -99,9 +99,10 @@ The money and group logic is built and proven first, with no UI, because everyth
   *Done when:* tests cover scope (no data leaks from other users) and pagination boundaries.
   *Note:* `{changes: [{entity, serverSeq, state}], cursor, hasMore}`, limit 200 (max 500). Each page is one REPEATABLE READ snapshot, so no gaps (tested with a mid-page commit). History rows come in the same stream as `entity_history`, with a `kind` the app table doesn't have yet (3.6). Groups and members are pulled but not pushable until 4.1.
 
-- [ ] **3.6 Sync client** (§6)
+- [x] **3.6 Sync client** (§6)
   Outbox processor (batches, exponential backoff), pull + apply + rebase of pending ops, cursor storage, and triggers (start, reconnect, debounced write, WorkManager). A sync status indicator in the UI.
   *Done when:* an integration test does airplane mode → 5 edits → online, and the server has all 5.
+  *Note:* Added connectivity_plus + workmanager (approved). The proof is `app/test_e2e/` against a real Django server (CI job `e2e`), not an on-device integration_test. Account switch = wipe and pull (decided with the user); first sign-in uploads local-only data. Schema v2 (`sync_state.account_id`, `entity_history.kind`, `outbox.reject_reason`). See ADR 0007.
 
 - [ ] **3.7 Sync simulation harness** (§11)
   2–3 fake clients plus an in-memory fake server that follows the same rules. Random ops, random offline periods, random push/pull order.
@@ -229,3 +230,4 @@ The money and group logic is built and proven first, with no UI, because everyth
 - 2026-10-06: 3.3 — Personal rows keyed by (owner, entity_id), group rows by entity_id, applied ops by (user, op_id). `budget_category_limits` not mirrored (unused since 2.4). Ledger writes are serialized globally by the seq lock (fine at this scale; ADR 0005 names the alternative).
 - 2026-10-06: 3.4 — The app must send `deviceId` with every push (3.6), and should send `amountMinor`, `split` and `shares` together when any of them changes (4.2): the server checks the merged row and rejects `shares_mismatch` otherwise. Unknown fields are rejected, so app/server field drift fails loudly.
 - 2026-10-06: 3.5 — Joining a group later needs a backfill: rows written before the joiner's cursor never come through a normal pull. 4.1 must send the group's current rows on join (e.g. a group-scoped `since=0` pull). Removed members get their own member tombstone, then nothing more from the group.
+- 2026-10-06: 3.6 — Pulled rows of entities without a local table yet are skipped while the cursor moves on: week 4's migration that adds group tables must reset the cursor to 0. The interceptor re-reads stored tokens before signing out, so WorkManager and the app can't log each other out by racing a refresh.

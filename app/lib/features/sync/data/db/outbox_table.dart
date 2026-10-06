@@ -30,4 +30,7 @@ class Outbox extends Table {
   TextColumn get status => textEnum<OutboxStatus>().withDefault(
     Constant(OutboxStatus.pending.name),
   )();
+
+  /// Why the server rejected it (e.g. `not_a_member`), for the UI.
+  TextColumn get rejectReason => text().nullable()();
 }

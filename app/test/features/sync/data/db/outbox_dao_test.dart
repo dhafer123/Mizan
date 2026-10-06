@@ -68,11 +68,12 @@ void main() {
     await queue(['a']);
     final [a] = await db.outboxDao.pending();
 
-    await db.outboxDao.markRejected([a.seq]);
+    await db.outboxDao.markRejected({a.seq: 'not_a_member'});
 
     expect(await db.outboxDao.pending(), isEmpty);
     final [row] = await db.select(db.outbox).get();
     expect(row.status, OutboxStatus.rejected);
+    expect(row.rejectReason, 'not_a_member');
   });
 
   test('acknowledged ops are removed', () async {

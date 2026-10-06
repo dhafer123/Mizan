@@ -64,10 +64,57 @@ class OutboxDao extends DatabaseAccessor<AppDatabase> with _$OutboxDaoMixin {
         ),
       );
 
-  Future<void> markRejected(Iterable<int> seqs) => _setStatus(
-    seqs,
-    const OutboxCompanion(status: Value(OutboxStatus.rejected)),
-  );
+  /// The server refused these for good: kept, with its reason, for the UI.
+  Future<void> markRejected(Map<int, String> reasons) => transaction(() async {
+    for (final MapEntry(key: seq, value: reason) in reasons.entries) {
+      await (update(outbox)..where((o) => o.seq.equals(seq))).write(
+        OutboxCompanion(
+          status: const Value(OutboxStatus.rejected),
+          rejectReason: Value(reason),
+        ),
+      );
+    }
+  });
+
+  /// Ops left `sending` by a push that never finished (the app was killed):
+  /// back to pending. Re-sending is safe; the server dedupes by op id.
+  Future<void> resetSending() =>
+      (update(outbox)..where((o) => o.status.equalsValue(OutboxStatus.sending)))
+          .write(const OutboxCompanion(status: Value(OutboxStatus.pending)));
+
+  /// Ops for one row that the server hasn't taken yet (pending or sending),
+  /// oldest first: what a pull re-applies on top of the server's row.
+  Future<List<OutboxEntry>> queuedFor(String entity, String entityId) =>
+      (select(outbox)
+            ..where(
+              (o) =>
+                  o.entity.equals(entity) &
+                  o.entityId.equals(entityId) &
+                  o.status.equalsValue(OutboxStatus.rejected).not(),
+            )
+            ..orderBy([(o) => OrderingTerm.asc(o.seq)]))
+          .get();
+
+  /// Ops waiting (pending or in flight) and refused, re-emitted on changes.
+  Stream<({int pending, int rejected})> watchCounts() {
+    final count = outbox.seq.count();
+    return (selectOnly(outbox)
+          ..addColumns([outbox.status, count])
+          ..groupBy([outbox.status]))
+        .watch()
+        .map((rows) {
+          var pending = 0, rejected = 0;
+          for (final row in rows) {
+            final n = row.read(count)!;
+            if (row.read(outbox.status) == OutboxStatus.rejected.name) {
+              rejected += n;
+            } else {
+              pending += n;
+            }
+          }
+          return (pending: pending, rejected: rejected);
+        });
+  }
 
   /// The server applied (or merged) these ops: they are done.
   Future<void> removeAcknowledged(Iterable<int> seqs) =>

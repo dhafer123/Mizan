@@ -156,6 +156,23 @@ void main() {
     },
   );
 
+  test('refresh token already used by another isolate: takes the stored '
+      'new pair instead of signing out', () async {
+    // Background sync (WorkManager) refreshed first; storage has its pair.
+    const theirs = TokenPair(access: 'access-3', refresh: 'refresh-3');
+    server.validAccess = theirs.access;
+    server.refresh = (_) {
+      store.session = _session.copyWith(tokens: theirs);
+      return FakeHttpAdapter.json(401, {'code': 'token_not_valid'});
+    };
+
+    final response = await dio.get<Object?>('/data');
+
+    expect(response.statusCode, 200);
+    expect(expired, 0);
+    expect(server.data.last.headers['Authorization'], 'Bearer access-3');
+  });
+
   test('refresh offline: keeps the session and passes the 401 on', () async {
     server.validAccess = _new.access;
     server.refresh = FakeHttpAdapter.offline;

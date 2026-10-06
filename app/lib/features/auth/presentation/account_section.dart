@@ -6,6 +6,7 @@ import '../../../app/di/auth_providers.dart';
 import '../../../app/router/app_router.dart';
 import '../../../core/result/result.dart';
 import '../../expenses/presentation/shared/failure_message.dart';
+import '../../sync/presentation/sync_status_provider.dart';
 import '../domain/entities/account.dart';
 import 'account_provider.dart';
 
@@ -31,13 +32,21 @@ class _AccountSectionState extends ConsumerState<AccountSection> {
   }
 
   Future<void> _logOut() async {
+    final pending = ref.read(syncStatusProvider).value?.outbox.pending ?? 0;
+    final unsynced = switch (pending) {
+      0 => '',
+      1 => '\n\n1 change hasn\'t synced yet. ',
+      _ => '\n\n$pending changes haven\'t synced yet. ',
+    };
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Log out?'),
-        content: const Text(
+        content: Text(
           'Your data stays on this phone. It stops syncing until you sign '
-          'in again.',
+          'in again.'
+          '$unsynced${pending == 0 ? '' : 'If you then sign in to a different '
+                    'account, they will be deleted from this phone.'}',
         ),
         actions: [
           TextButton(
