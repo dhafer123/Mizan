@@ -20,6 +20,7 @@ Django REST Framework + PostgreSQL. Design: `docs/ARCHITECTURE.md` §6 (sync) an
 | `POST /auth/refresh` | `{refresh}` → `{access, refresh}` (each refresh token works once); 401 `token_not_valid` |
 | `POST /auth/logout` | `{refresh, deviceId?}` → 204, revokes the token and forgets the device |
 | `GET /auth/me` | `Authorization: Bearer <access>` → `{id, email, displayName}` |
+| `GET /sync/pull?since=&limit=` | `{changes: [{entity, serverSeq, state}], cursor, hasMore}`; own rows, active groups' rows, history; see `sync/pull.py` |
 | `POST /sync/push` | `{deviceId, ops: [≤200]}` → `{results: [{opId, entity, entityId, status, reason?, field?, state}]}`; see `sync/push.py` and ADR 0006 |
 
 `device` is `{id: uuid, platform: "android" | "ios", name?}`. Errors are always

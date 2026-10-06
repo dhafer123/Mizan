@@ -176,8 +176,10 @@ It returns a result per op: `applied` / `merged` / `rejected` (with a reason) an
 | Settlements | Insert-only: never edited or deleted. A mistake is fixed with a reversing settlement. No conflicts possible. |
 | Member removed from a group | Their pending ops for that group are rejected with `not_a_member`. |
 
-### Pull: `GET /sync/pull?since=<cursor>`
-- Returns every change with `serverSeq > cursor` in the user's scopes (their own records plus the groups they belong to), including tombstones. It's paginated.
+### Pull: `GET /sync/pull?since=<cursor>&limit=<n>`
+- Returns every change with `serverSeq > cursor` in the user's scopes (their own records plus the groups they belong to), including tombstones and history. It's paginated: `{"changes": [{"entity", "serverSeq", "state"}], "cursor", "hasMore"}`, with `limit` 200 by default and 500 at most.
+- A page is read from one snapshot (REPEATABLE READ). Writes commit in `serverSeq` order (ADR 0005), so a page never skips a row.
+- A member removed from a group still gets their own member row (as a tombstone), then nothing more from that group.
 - The client applies the changes in one transaction, then **re-applies pending outbox ops on top** (rebase), so local unsynced edits stay visible.
 - The client stores the new cursor.
 

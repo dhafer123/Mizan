@@ -28,6 +28,7 @@ from .fields import (
     REF,
     SHARES,
     TEXT,
+    Codec,
     Field,
 )
 
@@ -99,6 +100,8 @@ class EntitySpec:
     insert_only: bool = False
     deletable: bool = True
     built_ins: dict = field(default_factory=dict)
+    # Groups and members are pulled now but created through push in task 4.1.
+    pushable: bool = True
 
     def read(self, row):
         """A row's values, keyed by JSON field name (Python values)."""
@@ -202,6 +205,9 @@ def _check_settlement(values, ctx):
 
 GROUP_ID = Field("group", REF, immutable=True)
 
+# A user id as the app sees it: an opaque string (like /auth/me's id).
+USER_ID = Codec(clean=lambda value: value, dump=str, nullable=True)
+
 ENTITIES = {
     spec.name: spec
     for spec in [
@@ -257,6 +263,28 @@ ENTITIES = {
                 "currency": Field("currency", CURRENCY),
             },
             check=_check_budget,
+        ),
+        EntitySpec(
+            "groups",
+            Group,
+            GROUP,
+            {
+                "name": Field("name", TEXT(60)),
+                "currency": Field("currency", CURRENCY, immutable=True),
+            },
+            pushable=False,
+        ),
+        EntitySpec(
+            "members",
+            Member,
+            GROUP,
+            {
+                "groupId": GROUP_ID,
+                # Null for a placeholder nobody has claimed yet.
+                "userId": Field("user_id", USER_ID, required=False),
+                "displayName": Field("display_name", TEXT(50)),
+            },
+            pushable=False,
         ),
         EntitySpec(
             "shared_expenses",

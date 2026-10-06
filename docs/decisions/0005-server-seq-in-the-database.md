@@ -27,3 +27,7 @@ Pull returns "every change with `serverSeq > cursor`" (ARCHITECTURE.md §6), and
 - `version` counts every server write, including merges. A client's `baseVersion` is compared against it in 3.4.
 - Account deletion (6.4) has to delete settlements and history, which the insert-only triggers allow, since they only block UPDATE.
 - Tests: `tests/test_server_seq.py` covers strictly increasing seqs across tables and writes, stamping on every write path, and a two-thread test showing that a second writer waits for the first commit and gets a larger seq. The test fails if the lock is removed (checked by hand). `tests/test_ledger_migrations.py` checks that the migrations unapply and reapply cleanly with every trigger in place.
+
+## Addendum (task 3.5): reading a page
+
+Commit order alone isn't enough when a page reads several tables. At READ COMMITTED, each query gets its own snapshot. A commit that lands between the expenses query and the categories query can put seq N+1 on the page and leave seq N out. `/sync/pull` therefore reads each page in one `REPEATABLE READ READ ONLY` transaction. `tests/test_pull.py` commits two rows in the middle of a page. The test fails at READ COMMITTED (checked by hand) and passes as written.

@@ -163,7 +163,7 @@ def _parse(raw, device_id):
 
 def _apply(user, op):
     spec = ENTITIES.get(op.entity)
-    if spec is None:
+    if spec is None or not spec.pushable:
         raise Rejected("unknown_entity")
 
     row, group = _find(user, spec, op)

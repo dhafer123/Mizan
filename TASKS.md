@@ -94,9 +94,10 @@ The money and group logic is built and proven first, with no UI, because everyth
   *Done when:* there's one pytest per row of the conflict table, plus idempotency and permission tests.
   *Note:* Push takes `{deviceId, ops}`; "concurrent" = changed by another device since `baseVersion` (a device's own queued ops share a base until it pulls). Each op runs under the ledger lock with its applied-op record in the same transaction. Edits after a delete are rejected `deleted` and kept in history as `discarded`; a create on a tombstone restores. Entities: the 4 personal ones + shared expenses and settlements (groups/members via push in 4.1). See ADR 0006.
 
-- [ ] **3.5 `/sync/pull`** (§6)
+- [x] **3.5 `/sync/pull`** (§6)
   Changes since the cursor, scoped to the user's records and groups, including tombstones, paginated.
   *Done when:* tests cover scope (no data leaks from other users) and pagination boundaries.
+  *Note:* `{changes: [{entity, serverSeq, state}], cursor, hasMore}`, limit 200 (max 500). Each page is one REPEATABLE READ snapshot, so no gaps (tested with a mid-page commit). History rows come in the same stream as `entity_history`, with a `kind` the app table doesn't have yet (3.6). Groups and members are pulled but not pushable until 4.1.
 
 - [ ] **3.6 Sync client** (§6)
   Outbox processor (batches, exponential backoff), pull + apply + rebase of pending ops, cursor storage, and triggers (start, reconnect, debounced write, WorkManager). A sync status indicator in the UI.
@@ -227,3 +228,4 @@ The money and group logic is built and proven first, with no UI, because everyth
 - 2026-10-06: 3.2 — `accounts.User` uses email as the login (no username); a device row (client UUID per install) is upserted at login/sign-up. Server refresh is our own service (rotation race-safe, 401 for deleted users). Local rows aren't tied to an account: 3.6 must decide what happens when a different account signs in. A WorkManager refresh in 3.6 must not race the app's interceptor (single-use refresh tokens).
 - 2026-10-06: 3.3 — Personal rows keyed by (owner, entity_id), group rows by entity_id, applied ops by (user, op_id). `budget_category_limits` not mirrored (unused since 2.4). Ledger writes are serialized globally by the seq lock (fine at this scale; ADR 0005 names the alternative).
 - 2026-10-06: 3.4 — The app must send `deviceId` with every push (3.6), and should send `amountMinor`, `split` and `shares` together when any of them changes (4.2): the server checks the merged row and rejects `shares_mismatch` otherwise. Unknown fields are rejected, so app/server field drift fails loudly.
+- 2026-10-06: 3.5 — Joining a group later needs a backfill: rows written before the joiner's cursor never come through a normal pull. 4.1 must send the group's current rows on join (e.g. a group-scoped `since=0` pull). Removed members get their own member tombstone, then nothing more from the group.
