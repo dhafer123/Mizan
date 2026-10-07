@@ -10,6 +10,7 @@ import '../../features/budget/domain/usecases/compute_dashboard.dart';
 import '../../features/budget/domain/usecases/compute_money_available.dart';
 import '../../features/budget/domain/usecases/delete_income_source.dart';
 import '../../features/budget/domain/usecases/edit_income_source.dart';
+import '../../features/budget/domain/usecases/forecast_run_out.dart';
 import '../../features/budget/domain/usecases/set_monthly_budget.dart';
 import '../../features/budget/domain/usecases/validate_income_source.dart';
 import '../../features/budget/domain/usecases/watch_budgets.dart';
@@ -75,3 +76,6 @@ ComputeDashboard computeDashboard(Ref ref) => ComputeDashboard(
   overview: ref.watch(computeBudgetOverviewProvider),
   available: ref.watch(computeMoneyAvailableProvider),
 );
+
+@Riverpod(keepAlive: true)
+ForecastRunOut forecastRunOut(Ref ref) => const ForecastRunOut();

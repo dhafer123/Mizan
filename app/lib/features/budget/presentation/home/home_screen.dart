@@ -8,12 +8,13 @@ import '../../../expenses/presentation/shared/failure_message.dart';
 import '../../../sync/presentation/sync_status_button.dart';
 import '../../domain/value_objects/dashboard.dart';
 import 'dashboard_provider.dart';
+import 'forecast_card.dart';
 import 'money_left_card.dart';
 import 'recent_expenses_card.dart';
 import 'top_categories_card.dart';
 
-/// The dashboard: money left this month, days until the next income, where
-/// the money went, and the newest expenses.
+/// The dashboard: money left this month, days until the next income, when
+/// the money runs out, where it went, and the newest expenses.
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -84,6 +85,8 @@ class _DashboardBody extends StatelessWidget {
       ),
       children: [
         MoneyLeftCard(dashboard: dashboard),
+        const SizedBox(height: 12),
+        ForecastCard(owedToMe: dashboard.owedToMe),
         const SizedBox(height: 12),
         TopCategoriesCard(dashboard: dashboard),
         const SizedBox(height: 12),

@@ -199,10 +199,10 @@ On app start, when coming back online (connectivity listener), after a local wri
 
 The question is: when does my available money hit 0?
 
-- **Available now** = current balance − upcoming recurring costs + money owed to me (optional toggle).
+- **Available now** = money left this month (as on Home) + money owed to me (optional toggle). Recurring costs are subtracted on their day during the projection (ADR 0012).
 - **Daily variable spend**: an exponentially weighted average over the last 28 days, **split by weekday vs weekend** (students spend differently on weekends), excluding known recurring items.
-- **Projection**: step day by day from today, subtracting the expected spend and adding scheduled income, until the balance goes below 0 or the horizon (60 days) ends.
-- **Range**: repeat the projection with the 25th and 75th percentile of daily spend, giving a "run-out between the 21st and the 25th" range.
+- **Projection**: step day by day from tomorrow, subtracting the expected spend and recurring costs and adding income from later months (this month's is already in money left), until the balance goes below 0 or the horizon (60 days) ends.
+- **Range**: repeat the projection with the rates scaled by the 25th and 75th percentile of 7-day spending totals (daily totals are too lumpy), giving a "run-out between the 21st and the 25th" range (ADR 0012).
 - **Cold start** (< 14 days of data): use the budget as the spending rate and say so in the UI.
 - **Evaluation (backtest)**: on real usage data, at each day *d* forecast the run-out date using only data before *d*, then compare with the actual date. Report the mean absolute error in days.
 

@@ -12,12 +12,19 @@ import 'package:mizan/core/money/currency.dart';
 import 'package:mizan/core/money/money.dart';
 import 'package:mizan/features/budget/domain/entities/budget.dart';
 import 'package:mizan/features/budget/domain/entities/income_source.dart';
+import 'package:mizan/features/budget/domain/usecases/forecast_run_out.dart';
 import 'package:mizan/features/budget/domain/value_objects/budget_error.dart';
 import 'package:mizan/features/budget/domain/value_objects/budget_failure.dart';
 import 'package:mizan/features/budget/domain/value_objects/income_schedule.dart';
+import 'package:mizan/features/budget/domain/value_objects/recurring_cost.dart';
+import 'package:mizan/features/budget/domain/value_objects/run_out_forecast.dart';
 import 'package:mizan/features/budget/presentation/home/home_screen.dart';
 import 'package:mizan/features/expenses/domain/entities/default_categories.dart';
 import 'package:mizan/features/expenses/domain/entities/expense.dart';
+import 'package:mizan/features/groups/domain/value_objects/group_share.dart';
+import 'package:mizan/features/groups/domain/value_objects/my_group_money.dart';
+import 'package:mizan/features/groups/presentation/shared/group_data_providers.dart'
+    show myGroupMoneyProvider;
 
 import '../../../../support/fake_auth_repository.dart';
 import '../../../../support/fake_budget_repository.dart';
@@ -91,7 +98,12 @@ class _Repos {
   final FakeCategoryRepository categories;
 }
 
-Future<void> _pump(WidgetTester tester, _Repos repos) async {
+Future<void> _pump(
+  WidgetTester tester,
+  _Repos repos, {
+  MyGroupMoney? groups,
+  ForecastRunOut? forecast,
+}) async {
   // Tall enough to show every card without scrolling.
   tester.view
     ..physicalSize = const Size(1200, 2600)
@@ -111,6 +123,10 @@ Future<void> _pump(WidgetTester tester, _Repos repos) async {
         incomeSourceRepositoryProvider.overrideWithValue(repos.incomes),
         groupRepositoryProvider.overrideWithValue(FakeGroupRepository()),
         authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
+        if (groups != null)
+          myGroupMoneyProvider.overrideWith((ref) => Stream.value(groups)),
+        if (forecast != null)
+          forecastRunOutProvider.overrideWithValue(forecast),
       ],
       child: const MaterialApp(home: HomeScreen()),
     ),
@@ -234,7 +250,10 @@ void main() {
       expect(find.text('Add income'), findsOneWidget);
       expect(find.textContaining('No spending yet this month'), findsOneWidget);
       expect(find.textContaining('No expenses yet'), findsOneWidget);
-      expect(find.textContaining('budget'), findsNothing);
+      expect(
+        _inCard('Money left this month', find.textContaining('budget')),
+        findsNothing,
+      );
     });
 
     testWidgets('income but no spending: all of it is left', (tester) async {
@@ -347,4 +366,156 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Money left this month'), findsOneWidget);
   });
+
+  group('forecast', () {
+    /// 10 DT on each of the 28 days before today (6 Oct), 50 of it in
+    /// October.
+    final steady = [
+      for (var age = 1; age <= 28; age++)
+        Expense(
+          id: 'd$age',
+          amount: _dt(10),
+          categoryId: 'food',
+          date: DateTime.utc(2026, 10, 6).subtract(Duration(days: age)),
+        ),
+    ];
+
+    String headline(WidgetTester tester) => tester
+        .widget<Text>(find.byKey(const ValueKey('forecastHeadline')))
+        .data!;
+
+    testWidgets('no history and no budget: asks for more data', (tester) async {
+      await _pump(tester, _Repos());
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('forecastNeedsData')), findsOneWidget);
+      expect(find.textContaining('(14 to go)'), findsOneWidget);
+      expect(find.text('Set budget'), findsOneWidget);
+    });
+
+    testWidgets('steady spending: the run-out day and what it is based on', (
+      tester,
+    ) async {
+      // 300 - 50 = 250 left: 0 on 31 Oct, below on 1 Nov.
+      await _pump(tester, _Repos(expenses: steady, incomes: [_grant(300)]));
+      await tester.pumpAndSettle();
+
+      expect(headline(tester), 'Money runs out around Nov 1');
+      expect(find.text('Based on spending 10.000 DT a day.'), findsOneWidget);
+      // Steady: no range to show.
+      expect(find.byKey(const ValueKey('forecastRange')), findsNothing);
+    });
+
+    testWidgets('enough money: lasts past the horizon', (tester) async {
+      await _pump(tester, _Repos(expenses: steady, incomes: [_grant(600)]));
+      await tester.pumpAndSettle();
+
+      expect(headline(tester), 'Your money lasts past Dec 5');
+    });
+
+    testWidgets('already below 0: says so', (tester) async {
+      await _pump(tester, _Repos(expenses: steady));
+      await tester.pumpAndSettle();
+
+      expect(headline(tester), 'Your money for this month has run out');
+    });
+
+    testWidgets('cold start: uses the budget and says so', (tester) async {
+      await _pump(
+        tester,
+        _Repos(
+          expenses: [_expense('e1', 'food', 20, day: 1)],
+          incomes: [_grant(300)],
+          budgets: [_budget(10, 310)],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 280 left at 10 a day: 0 on 3 Nov, below on 4 Nov.
+      expect(headline(tester), 'Money runs out around Nov 4');
+      expect(
+        find.text(
+          'Based on your monthly budget until you have 14 days of spending.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('money owed to me can be counted', (tester) async {
+      await _pump(
+        tester,
+        _Repos(expenses: steady, incomes: [_grant(300)]),
+        groups: MyGroupMoney(
+          shares: const <GroupShare>[],
+          owedToMe: _dt(100),
+          iOwe: Money.zero(Currency.tnd),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(headline(tester), 'Money runs out around Nov 1');
+
+      await tester.tap(find.byKey(const ValueKey('includeOwed')));
+      await tester.pumpAndSettle();
+
+      // 350 instead of 250: ten days later.
+      expect(headline(tester), 'Money runs out around Nov 11');
+    });
+
+    testWidgets('no switch when nothing is owed', (tester) async {
+      await _pump(tester, _Repos(expenses: steady, incomes: [_grant(300)]));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('includeOwed')), findsNothing);
+    });
+
+    testWidgets('a failure shows in the card and can be retried', (
+      tester,
+    ) async {
+      final forecast = _FlakyForecast();
+      await _pump(
+        tester,
+        _Repos(expenses: steady, incomes: [_grant(300)]),
+        forecast: forecast,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Money left this month'), findsOneWidget);
+      expect(find.byKey(const ValueKey('forecastHeadline')), findsNothing);
+      expect(find.text('Try again'), findsOneWidget);
+
+      forecast.fail = false;
+      await tester.tap(find.text('Try again'));
+      await tester.pumpAndSettle();
+      expect(headline(tester), 'Money runs out around Nov 1');
+    });
+  });
+}
+
+/// Fails until [fail] is cleared.
+class _FlakyForecast extends ForecastRunOut {
+  bool fail = true;
+
+  @override
+  RunOutForecast call({
+    required DateTime today,
+    required Money available,
+    required List<IncomeSource> incomes,
+    required List<Expense> expenses,
+    List<GroupShare> shares = const [],
+    List<RecurringCost> recurring = const [],
+    Money? owedToMe,
+    Money? monthlyBudget,
+  }) {
+    if (fail) throw StateError('forecast failed');
+    return super(
+      today: today,
+      available: available,
+      incomes: incomes,
+      expenses: expenses,
+      shares: shares,
+      recurring: recurring,
+      owedToMe: owedToMe,
+      monthlyBudget: monthlyBudget,
+    );
+  }
 }

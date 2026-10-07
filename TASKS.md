@@ -151,9 +151,10 @@ The money and group logic is built and proven first, with no UI, because everyth
 
 ## Week 5 (Nov 3–9): smart warnings and fast input
 
-- [ ] **5.1 Forecast** (§7)
+- [x] **5.1 Forecast** (§7)
   Weighted daily spend split into weekday and weekend, a day-by-day projection with incomes and recurring costs, a low–high range, cold-start mode, and an optional "include money owed to me".
   *Done when:* unit tests use fixed synthetic histories (steady, weekend-heavy, irregular income, cold start).
+  *Note:* `EstimateDailySpend` + `ForecastRunOut` (pure, integer-only). Starts from Home's money left and adds only later months' income (decided with the user). The range scales the rates by the 25th/75th percentile of 7-day totals, not daily ones (mostly 0 for students). `RecurringCost` is an input only: the app passes none until there's an entity (decided with the user). Home gets a forecast card with a session-long "count money owed to me" switch. Tests: `test/features/budget/domain/usecases/{estimate_daily_spend,forecast_run_out}_test.dart` (named histories plus properties: earliest ≤ expected ≤ latest, more money never runs out sooner, constant spend gives that rate). See ADR 0012.
 
 - [ ] **5.2 Alerts** (§4)
   Category ≥ 80% used, run-out before next income, unusual spending (> 2.5× the 4-week median). Local notifications, at most one a day per alert type.
