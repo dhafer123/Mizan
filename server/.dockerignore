@@ -6,3 +6,6 @@ __pycache__/
 .coverage
 htmlcov/
 .env
+# Firebase service-account key: mounted at run time, never baked into the image.
+*firebase*.json
+fcm-*.json

@@ -13,6 +13,7 @@ import 'package:mizan/features/budget/presentation/home/home_screen.dart';
 import '../support/fake_auth_repository.dart';
 import '../support/fake_biometric_authenticator.dart';
 import '../support/fake_lock_settings_repository.dart';
+import '../support/fake_push_messaging.dart';
 import '../support/fake_sync_repository.dart';
 import '../support/test_database.dart';
 
@@ -33,6 +34,7 @@ void main() {
           authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
           connectivityMonitorProvider.overrideWithValue(FakeConnectivity()),
           backgroundSyncProvider.overrideWithValue(FakeBackgroundSync()),
+          pushMessagingProvider.overrideWithValue(FakePushMessaging()),
         ],
         child: const MizanApp(),
       ),

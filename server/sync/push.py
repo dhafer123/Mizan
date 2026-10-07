@@ -40,6 +40,7 @@ from dataclasses import dataclass
 from django.db import IntegrityError, transaction
 
 from groups.models import Group, Member
+from notifications.services import after_push
 
 from .db import lock_ledger
 from .entities import ENTITIES, GROUP, Context, RowInvalid
@@ -75,11 +76,18 @@ class Rejected(Exception):
 
 
 def push(user, device_id, ops):
-    """One result per op, in order. `device_id` is the sending phone's id."""
-    return [_process(user, device_id, raw) for raw in ops]
+    """One result per op, in order. `device_id` is the sending phone's id.
+    Then the other phones that should sync hear about it (notifications)."""
+    applied = []
+    results = [_process(user, device_id, raw, applied) for raw in ops]
+    if applied:
+        after_push(user, device_id, applied)
+    return results
 
 
-def _process(user, device_id, raw):
+def _process(user, device_id, raw, applied):
+    """The op's result. Appends (op type, result) to `applied` when this call
+    applied or merged it (not for a replay or a rejection)."""
     try:
         op = _parse(raw, device_id)
     except Rejected as e:
@@ -110,6 +118,8 @@ def _process(user, device_id, raw):
         if stored is None:
             raise
         return stored.result
+    if result["status"] != REJECTED:
+        applied.append((op.op_type, result))
     return result
 
 

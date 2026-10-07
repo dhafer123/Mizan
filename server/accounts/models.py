@@ -50,7 +50,8 @@ class User(AbstractUser):
 
 
 class Device(models.Model):
-    """A phone signed in to an account. Push tokens (FCM) arrive in task 4.6."""
+    """A phone signed in to an account, with its FCM push token once the app
+    has sent one (`PUT /auth/devices/<id>/push-token`)."""
 
     class Platform(models.TextChoices):
         ANDROID = "android", "Android"

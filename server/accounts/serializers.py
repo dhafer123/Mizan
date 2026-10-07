@@ -33,6 +33,11 @@ class LogOutSerializer(serializers.Serializer):
     deviceId = serializers.UUIDField(source="device_id", required=False)
 
 
+class PushTokenSerializer(serializers.Serializer):
+    # Empty stops pushes to this device (e.g. notifications turned off).
+    token = serializers.CharField(max_length=4096, allow_blank=True)
+
+
 class UserSerializer(serializers.ModelSerializer):
     # A string, so clients treat ids as opaque.
     id = serializers.CharField(read_only=True)

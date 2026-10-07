@@ -30,6 +30,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mizan}
       POSTGRES_HOST: db
       POSTGRES_PORT: "5432"
+      # A path inside server/ (mounted at /app), e.g. fcm-mizan.json.
+      FCM_CREDENTIALS_FILE: ${FCM_CREDENTIALS_FILE:-}
     ports:
       - "${API_PORT:-8000}:8000"
     volumes:

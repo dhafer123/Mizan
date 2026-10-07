@@ -93,6 +93,26 @@ def register_device(user, *, id, platform, name=""):
     return device
 
 
+class DeviceNotFound(APIException):
+    status_code = status.HTTP_404_NOT_FOUND
+    default_code = "device_not_found"
+    default_detail = "This device isn't signed in to this account."
+
+
+@transaction.atomic
+def set_push_token(user, device_id, token):
+    """Stores the device's FCM token ("" stops pushes to it). A token belongs
+    to one install: if another device row had it (a reinstall), it moves."""
+    device = Device.objects.select_for_update().filter(id=device_id, user=user).first()
+    if device is None:
+        raise DeviceNotFound()
+    if token:
+        Device.objects.filter(fcm_token=token).exclude(id=device_id).update(fcm_token="")
+    device.fcm_token = token
+    device.last_seen_at = timezone.now()
+    device.save(update_fields=["fcm_token", "last_seen_at"])
+
+
 def refresh_tokens(raw_refresh):
     """Swaps a refresh token for a new access + refresh pair.
 

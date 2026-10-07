@@ -5,7 +5,14 @@ from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from . import services
-from .serializers import LogInSerializer, LogOutSerializer, RefreshSerializer, SignUpSerializer, UserSerializer
+from .serializers import (
+    LogInSerializer,
+    LogOutSerializer,
+    PushTokenSerializer,
+    RefreshSerializer,
+    SignUpSerializer,
+    UserSerializer,
+)
 
 
 def _session(user, tokens):
@@ -54,6 +61,14 @@ class LogOutView(_PublicView):
             raw_refresh=serializer.validated_data["refresh"],
             device_id=serializer.validated_data.get("device_id"),
         )
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class PushTokenView(APIView):
+    def put(self, request, device_id):
+        serializer = PushTokenSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        services.set_push_token(request.user, device_id, serializer.validated_data["token"])
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

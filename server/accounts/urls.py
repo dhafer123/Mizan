@@ -8,4 +8,5 @@ urlpatterns = [
     path("refresh", views.RefreshView.as_view(), name="refresh"),
     path("logout", views.LogOutView.as_view(), name="logout"),
     path("me", views.MeView.as_view(), name="me"),
+    path("devices/<uuid:device_id>/push-token", views.PushTokenView.as_view(), name="push-token"),
 ]

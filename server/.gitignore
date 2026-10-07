@@ -1,0 +1,4 @@
+
+# Firebase service-account key (push notifications). Never commit it.
+*firebase*.json
+fcm-*.json

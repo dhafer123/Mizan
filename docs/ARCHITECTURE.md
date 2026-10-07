@@ -187,7 +187,7 @@ It returns a result per op: `applied` / `merged` / `rejected` (with a reason) an
 - **Joining a group:** the group's older rows sit below the joiner's cursor. `GET /sync/pull?group=<id>&since=<n>` returns only that group's rows, to active members. The app runs it from 0 once it pulls its own new member row (ADR 0009).
 
 ### When sync runs
-On app start, when coming back online (connectivity listener), after a local write (debounced 2 s), when an FCM "data changed" push arrives, and periodically with WorkManager. Failures retry with exponential backoff.
+On app start, when coming back online (connectivity listener), after a local write (debounced 2 s), when an FCM "data changed" push arrives, and periodically with WorkManager. Failures retry with exponential backoff. A push is only a signal (`{type: "sync"}`). It never carries rows, so sync stays the only data path. Without a Firebase config, push is off and the other triggers remain (ADR 0011).
 
 ### Invariants (tested)
 1. **Convergence:** after all devices push and pull, every device has identical rows.
@@ -232,7 +232,7 @@ receipt ─► OCR (ML Kit) ──┘
 | `ledger` | Server-side models mirroring synced entities, plus `version`, `server_seq`, `deleted` |
 | `sync` | `/sync/push`, `/sync/pull`, applied-op log, conflict policy, history |
 | `groups` | Invite tokens (link / QR, single-use, 7 days), joining, placeholder claiming. Groups and members themselves sync through push (ADR 0009) |
-| `notifications` | FCM pushes: "new shared expense", "you were added to a group", settle-up reminders |
+| `notifications` | FCM pushes (HTTP v1, after commit, off the request thread): "data changed" to members' other phones, "new shared expense", "someone joined", weekly settle-up reminders (ADR 0011) |
 
 - PostgreSQL, with Docker Compose for local development.
 - The server **re-validates** domain rules (shares sum to the amount *and* are what the split gives, member belongs to the group). It never trusts the client. Split JSON: ADR 0010.

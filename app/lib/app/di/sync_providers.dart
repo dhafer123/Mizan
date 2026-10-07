@@ -1,16 +1,25 @@
+import 'dart:async';
+
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:workmanager/workmanager.dart';
 
 import '../../features/sync/data/platform/connectivity_plus_monitor.dart';
+import '../../features/sync/data/platform/firebase_push_messaging.dart';
 import '../../features/sync/data/platform/workmanager_background_sync.dart';
+import '../../features/sync/data/remote/push_token_api.dart';
 import '../../features/sync/data/remote/sync_api.dart';
+import '../../features/sync/data/repositories/push_token_repository_impl.dart';
 import '../../features/sync/data/repositories/sync_repository_impl.dart';
 import '../../features/sync/domain/repositories/background_sync.dart';
 import '../../features/sync/domain/repositories/connectivity_monitor.dart';
+import '../../features/sync/domain/repositories/push_messaging.dart';
+import '../../features/sync/domain/repositories/push_token_repository.dart';
 import '../../features/sync/domain/repositories/sync_repository.dart';
 import '../../features/sync/domain/usecases/claim_local_data.dart';
 import '../../features/sync/domain/usecases/get_last_sync_time.dart';
+import '../../features/sync/domain/usecases/push_listener.dart';
 import '../../features/sync/domain/usecases/sync_now.dart';
 import '../../features/sync/domain/usecases/sync_scheduler.dart';
 import '../../features/sync/domain/usecases/watch_outbox_counts.dart';
@@ -75,4 +84,30 @@ SyncScheduler syncScheduler(Ref ref) {
   )..start();
   ref.onDispose(scheduler.dispose);
   return scheduler;
+}
+
+/// Override with a fake in tests.
+@Riverpod(keepAlive: true)
+PushMessaging pushMessaging(Ref ref) =>
+    FirebasePushMessaging(FlutterLocalNotificationsPlugin());
+
+@Riverpod(keepAlive: true)
+PushTokenRepository pushTokenRepository(Ref ref) => PushTokenRepositoryImpl(
+  PushTokenApi(ref.watch(apiDioProvider)),
+  deviceId: ref.watch(sessionStoreProvider).deviceId,
+);
+
+/// Pushes trigger a sync. Started by `SyncLifecycle` with the app.
+@Riverpod(keepAlive: true)
+PushListener pushListener(Ref ref) {
+  final scheduler = ref.watch(syncSchedulerProvider);
+  final listener = PushListener(
+    push: ref.watch(pushMessagingProvider),
+    tokens: ref.watch(pushTokenRepositoryProvider),
+    accounts: ref.watch(watchAccountProvider)().map((a) => a?.id),
+    onDataChanged: scheduler.syncNow,
+  );
+  unawaited(listener.start());
+  ref.onDispose(listener.dispose);
+  return listener;
 }

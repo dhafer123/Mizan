@@ -21,6 +21,7 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.exceptions import APIException
 
+from notifications.services import joined
 from sync.db import lock_ledger
 from sync.models import EntityHistory
 
@@ -164,6 +165,7 @@ def join(user, token):
         invite.used_by = user
         invite.used_at = timezone.now()
         invite.save()
+        joined(user, group, member)
         return group, member
 
 

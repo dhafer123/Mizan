@@ -1,1 +1,1 @@
-# Models arrive with their tasks (see TASKS.md week 3-4).
+# No tables: push tokens live on accounts.Device.

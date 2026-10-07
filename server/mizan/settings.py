@@ -117,6 +117,12 @@ SIMPLE_JWT = {
     "USER_ID_CLAIM": "user_id",
 }
 
+# Push notifications (task 4.6): a Firebase service-account key (JSON file).
+# Unset, pushes are only logged; the app still syncs on its own triggers.
+FCM_CREDENTIALS_FILE = env("FCM_CREDENTIALS_FILE")
+# Send pushes on the request thread (tests) instead of a background one.
+NOTIFICATIONS_INLINE = env_bool("NOTIFICATIONS_INLINE")
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,

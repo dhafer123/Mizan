@@ -12,3 +12,6 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+
+# Firebase config for push (each developer uses their own project, ADR 0011).
+app/google-services.json
