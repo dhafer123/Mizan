@@ -164,11 +164,11 @@ The money and group logic is built and proven first, with no UI, because everyth
 - [ ] **5.3 Forecast backtest**
   A script (in Dart or the notebook) that replays a history day by day and computes the mean absolute error in days.
   *Done when:* the error on your own 4+ weeks of data is in METRICS.md.
-  *Note:* Tool built, **not ticked: needs the real run.** `dart run tool/forecast_backtest.dart <export.csv> --income AMOUNT:WHEN --budget AMOUNT --end <export day>` (from `app/`). Replays at the end of each day with data up to that day; the actual date comes from `ForecastRunOut.runOutDay` (pulled out of the forecast) spending the real amounts, so both sides count money the same way. Days the data can't settle are lower bounds or censored, and reported apart (ADR 0014). Tests: `test/tool/backtest/`.
-
-- [ ] **5.4 Quick input: rule parser** (§8)
+  *Note:* Tool built, **not ticked: needs the real run.** `dart run tool/forecast_backtest.dart <export.csv> --income AMOUNT:WHEN --budget AMOUNT --end <export day>` (from `app/`). Replays at the end of each day with data up to that day; the actual date comes from `ForecastRunOut.runOutDay` (pulled out of the forecast) spending the real amounts, so both sides count money the same way. Days the data can't settle are lower bounds or censored, and reported apart (ADR 0014). Tests: `test/tool/backtest/`.                                                              
+- [x] **5.4 Quick input: rule parser** (§8)
   "coffee 3.5 and taxi 8", "3.5 café w 8 taxi", amounts with "," or ".", in FR / EN / Darija-in-Latin-letters. Returns items with a confidence score.
   *Done when:* there's a table-driven test of 50+ phrases, and the rule-only accuracy is in METRICS.md.
+  *Note:* `ParseExpenseText` (pure) → items (label, `Money`, confidence 0–100); below `fallbackBelow` (60) the LLM tier (5.5) takes over. Decided with the user: in TND a bare whole number ≥ 1000 is millimes ("kaskrout 3500" = 3.500 DT). `ExpenseKeywords` (FR/EN/Darija → default category) raises confidence now and is the categorizer's rules tier in 5.7. Numbers in words, dates and quantities are left to the LLM. Test: `test/features/quick_input/domain/usecases/parse_expense_text_test.dart` (61 phrases, 8 marked hard, plus a round-trip property test). See ADR 0015.
 
 - [ ] **5.5 Quick input: voice + LLM fallback** (§8)
   `SpeechRecognizer` interface with a speech_to_text implementation. The LLM fallback (flutter_gemma) returns JSON validated against a schema. A confirmation sheet shows the result.

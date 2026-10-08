@@ -218,7 +218,7 @@ receipt ─► OCR (ML Kit) ──┘
 
 - **Speech-to-text**: the platform recognizer (`speech_to_text`), preferring offline language packs. It sits behind a `SpeechRecognizer` interface so Whisper can be swapped in later.
 - **Parser, in 2 tiers:**
-  1. A deterministic rule parser handles amounts, "and" / "et" / "w" separators and known merchant keywords. It's fast, free and covers most simple phrases.
+  1. A deterministic rule parser handles amounts, "and" / "et" / "w" separators and known merchant keywords. It's fast, free and covers most simple phrases In TND, a bare whole number ≥ 1000 is millimes ("kaskrout 3500" = 3.500 DT). Each item gets a 0–100 confidence; below 60 the LLM tier runs (ADR 0015).
   2. If the rules give low confidence, fall back to an on-device LLM (`flutter_gemma`, small model) that returns JSON matching a fixed schema, validated before use.
 - **Receipt**: ML Kit text recognition (on-device), then a rule extractor for TOTAL / date lines, with an LLM fallback for messy receipts.
 - **Categorizer**: (1) the user's own memory (merchant or keyword → category, learned from corrections), then (2) rules, then (3) LLM.
