@@ -23,8 +23,8 @@ class ForecastCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final forecast = ref.watch(forecastProvider);
     final includeOwed = ref.watch(includeOwedInForecastProvider);
+    final forecast = ref.watch(forecastProvider(includeOwed: includeOwed));
 
     return Card(
       margin: EdgeInsets.zero,

@@ -381,6 +381,8 @@ class SyncLocalStore {
         _db.groupBackfills,
         _db.sharedExpenses,
         _db.settlements,
+        // Another account's alerts mustn't hold back this one's.
+        _db.sentAlerts,
       ]) {
         await _db.delete(table).go();
       }

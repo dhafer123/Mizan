@@ -4,10 +4,11 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+import '../../../../app/notifications/local_notifications.dart';
 import '../../domain/repositories/push_messaging.dart';
 import '../../domain/value_objects/push_message.dart';
 
-/// [PushMessaging] with FCM (firebase_messaging), and flutter_local_notifications
+/// [PushMessaging] with FCM (firebase_messaging), and [LocalNotifications]
 /// for notifications that arrive while the app is open (Android doesn't show
 /// those itself).
 ///
@@ -16,11 +17,15 @@ import '../../domain/value_objects/push_message.dart';
 class FirebasePushMessaging implements PushMessaging {
   FirebasePushMessaging(this._notifications);
 
-  final FlutterLocalNotificationsPlugin _notifications;
+  final LocalNotifications _notifications;
 
   /// Taps on a notification, whether FCM or this class showed it.
   final _tapped = StreamController<PushMessage>.broadcast();
   var _nextId = 0;
+
+  /// Payloads of notifications that aren't push ones (budget alerts) start
+  /// with this; their taps aren't groups to open.
+  static const otherPayloadPrefix = 'local:';
 
   /// The server sends group notifications in this channel
   /// (server/notifications/delivery.py), so it must exist before any arrive.
@@ -40,19 +45,11 @@ class FirebasePushMessaging implements PushMessaging {
     } on Object {
       return false; // No Firebase config in this build.
     }
-    await _notifications.initialize(
-      settings: const InitializationSettings(
-        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
-        iOS: DarwinInitializationSettings(),
-      ),
-      onDidReceiveNotificationResponse: (response) =>
-          _tapped.add(PushMessage(groupId: response.payload)),
-    );
-    await _notifications
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >()
-        ?.createNotificationChannel(_channel);
+    await _notifications.start();
+    _notifications.taps
+        .where((p) => !(p?.startsWith(otherPayloadPrefix) ?? false))
+        .listen((payload) => _tapped.add(PushMessage(groupId: payload)));
+    await _notifications.createChannel(_channel);
     FirebaseMessaging.onMessageOpenedApp.listen(
       (m) => _tapped.add(_toMessage(m)),
     );
@@ -82,18 +79,10 @@ class FirebasePushMessaging implements PushMessaging {
   @override
   Future<void> show(PushMessage message) => _notifications.show(
     id: _nextId++,
+    channel: _channel,
     title: message.title,
     body: message.body,
     payload: message.groupId,
-    notificationDetails: NotificationDetails(
-      android: AndroidNotificationDetails(
-        _channel.id,
-        _channel.name,
-        channelDescription: _channel.description,
-        importance: Importance.high,
-        priority: Priority.high,
-      ),
-    ),
   );
 
   static PushMessage _toMessage(RemoteMessage m) => PushMessage(

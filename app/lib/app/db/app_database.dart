@@ -8,6 +8,9 @@ import '../../features/budget/data/db/budgets_dao.dart';
 import '../../features/budget/data/db/budgets_table.dart';
 import '../../features/budget/data/db/income_sources_dao.dart';
 import '../../features/budget/data/db/income_sources_table.dart';
+import '../../features/budget/data/db/sent_alerts_dao.dart';
+import '../../features/budget/data/db/sent_alerts_table.dart';
+import '../../features/budget/domain/value_objects/alert_type.dart';
 import '../../features/expenses/data/db/categories_dao.dart';
 import '../../features/expenses/data/db/categories_table.dart';
 import '../../features/expenses/data/db/expenses_dao.dart';
@@ -52,6 +55,7 @@ part 'app_database.g.dart';
     GroupBackfills,
     SharedExpenses,
     Settlements,
+    SentAlerts,
   ],
   daos: [
     ExpensesDao,
@@ -63,6 +67,7 @@ part 'app_database.g.dart';
     GroupsDao,
     SharedExpensesDao,
     SettlementsDao,
+    SentAlertsDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -88,7 +93,7 @@ class AppDatabase extends _$AppDatabase {
   final Clock clock;
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -179,6 +184,10 @@ class AppDatabase extends _$AppDatabase {
             json_extract(state, '\$.updatedBy'), server_seq
           FROM server_rows WHERE entity = 'settlements'
         ''');
+      },
+      // 5.2: the local log of budget alerts sent. Starts empty.
+      from6To7: (m, schema) async {
+        await m.createTable(schema.sentAlerts);
       },
     ),
     beforeOpen: (details) => customStatement('PRAGMA foreign_keys = ON'),

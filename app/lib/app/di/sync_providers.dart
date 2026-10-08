@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:workmanager/workmanager.dart';
 
@@ -89,7 +88,7 @@ SyncScheduler syncScheduler(Ref ref) {
 /// Override with a fake in tests.
 @Riverpod(keepAlive: true)
 PushMessaging pushMessaging(Ref ref) =>
-    FirebasePushMessaging(FlutterLocalNotificationsPlugin());
+    FirebasePushMessaging(ref.watch(localNotificationsProvider));
 
 @Riverpod(keepAlive: true)
 PushTokenRepository pushTokenRepository(Ref ref) => PushTokenRepositoryImpl(

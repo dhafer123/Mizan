@@ -24,12 +24,13 @@ class IncludeOwedInForecast extends _$IncludeOwedInForecast {
 }
 
 /// When money left runs out, from Home's money left and this and last
-/// month's spending (always at least the 28 days the rates need).
+/// month's spending (always at least the 28 days the rates need), counting
+/// what's owed to me when [includeOwed]. Alerts always leave it out.
 ///
 /// Older spending isn't read, so someone with nothing in the last two
 /// months is a cold start again: their recent rate would be 0 anyway.
 @Riverpod(retry: noRetry)
-Future<RunOutForecast> forecast(Ref ref) async {
+Future<RunOutForecast> forecast(Ref ref, {required bool includeOwed}) async {
   final today = ref.watch(clockProvider).now();
   final month = YearMonth.of(today);
   final dashboard = await ref.watch(dashboardProvider.future);
@@ -39,7 +40,6 @@ Future<RunOutForecast> forecast(Ref ref) async {
   );
   final incomes = await ref.watch(incomeSourcesProvider.future);
   final groups = await ref.watch(myGroupMoneyProvider.future);
-  final includeOwed = ref.watch(includeOwedInForecastProvider);
 
   return ref.watch(forecastRunOutProvider)(
     today: today,

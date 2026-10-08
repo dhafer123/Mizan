@@ -1,16 +1,33 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mizan/app/background/background_sync_task.dart';
 import 'package:mizan/app/di/auth_providers.dart';
+import 'package:mizan/app/di/budget_providers.dart';
 import 'package:mizan/app/di/core_providers.dart';
+import 'package:mizan/app/di/expenses_providers.dart';
+import 'package:mizan/app/di/groups_providers.dart';
 import 'package:mizan/app/di/sync_providers.dart';
 import 'package:mizan/core/clock/fake_clock.dart';
+import 'package:mizan/core/money/currency.dart';
+import 'package:mizan/core/money/money.dart';
 import 'package:mizan/features/auth/data/session/stored_session.dart';
 import 'package:mizan/features/auth/data/session/token_pair.dart';
 import 'package:mizan/features/auth/domain/entities/account.dart';
+import 'package:mizan/features/budget/domain/value_objects/budget_alert.dart';
+import 'package:mizan/features/expenses/domain/entities/default_categories.dart';
+import 'package:mizan/features/expenses/domain/entities/expense.dart';
 import 'package:mizan/features/sync/domain/value_objects/sync_error.dart';
 import 'package:mizan/features/sync/domain/value_objects/sync_failure.dart';
 
+import '../../support/fake_alert_log.dart';
+import '../../support/fake_alert_notifier.dart';
+import '../../support/fake_auth_repository.dart';
+import '../../support/fake_budget_repository.dart';
+import '../../support/fake_category_repository.dart';
+import '../../support/fake_expense_repository.dart';
+import '../../support/fake_group_repository.dart';
+import '../../support/fake_income_source_repository.dart';
 import '../../support/fake_session_store.dart';
 import '../../support/fake_sync_repository.dart';
 
@@ -80,5 +97,68 @@ void main() {
       isFalse,
     );
     expect(repo.calls, isEmpty);
+  });
+
+  group('alerts', () {
+    late FakeAlertNotifier notifier;
+
+    ProviderContainer alertsContainer({List<Override> extra = const []}) {
+      notifier = FakeAlertNotifier();
+      final c = ProviderContainer(
+        overrides: [
+          clockProvider.overrideWithValue(FakeClock(DateTime.utc(2026, 10, 6))),
+          expenseRepositoryProvider.overrideWithValue(
+            FakeExpenseRepository([
+              Expense(
+                id: 'e1',
+                amount: const Money(130000, Currency.tnd),
+                categoryId: 'food',
+                date: DateTime.utc(2026, 10, 2),
+              ),
+            ]),
+          ),
+          categoryRepositoryProvider.overrideWithValue(
+            FakeCategoryRepository([
+              DefaultCategories.food.copyWith(
+                monthlyLimit: const Money(150000, Currency.tnd),
+              ),
+            ]),
+          ),
+          budgetRepositoryProvider.overrideWithValue(FakeBudgetRepository()),
+          incomeSourceRepositoryProvider.overrideWithValue(
+            FakeIncomeSourceRepository(),
+          ),
+          groupRepositoryProvider.overrideWithValue(FakeGroupRepository()),
+          authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
+          alertNotificationsProvider.overrideWithValue(notifier),
+          alertLogProvider.overrideWithValue(FakeAlertLog()),
+          ...extra,
+        ],
+      );
+      addTearDown(c.dispose);
+      return c;
+    }
+
+    test('sends the alerts due, and not again on the next run', () async {
+      final c = alertsContainer();
+
+      await runBackgroundAlerts(c);
+      expect(notifier.shown.single, isA<CategoryLimitAlert>());
+
+      await runBackgroundAlerts(c);
+      expect(notifier.shown, hasLength(1));
+    });
+
+    test('a failure is dropped, not thrown', () async {
+      final c = alertsContainer(
+        extra: [
+          computeBudgetAlertsProvider.overrideWith(
+            (ref) => throw StateError('broken'),
+          ),
+        ],
+      );
+      await runBackgroundAlerts(c);
+      expect(notifier.shown, isEmpty);
+    });
   });
 }

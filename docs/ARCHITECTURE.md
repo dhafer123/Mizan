@@ -128,7 +128,7 @@ All synced entities also carry the sync metadata: `version`, `deleted` (tombston
 | `simplifyDebts(balances)` | Greedy: biggest debtor pays biggest creditor. At most n − 1 transfers. Applying them makes every balance 0. |
 | `mySpending(month)` | Personal expenses + **my shares** of group expenses (not what I paid for others). |
 | `forecastRunOut(balance, history, incomes, recurring, debts)` | Returns the projected run-out date with a low–high range (see §7). |
-| `budgetAlerts(state)` | Category ≥ 80% used, forecast before next income, unusual spending (> 2.5× the 4-week median for a category). |
+| `budgetAlerts(state)` | Category ≥ 80% used, forecast before next income, unusual spending (an expense > 2.5× its category's 4-week median). Sent once per situation, at most one a day per type, from the app and the background sync (ADR 0013). |
 
 ## 5. Local storage (drift)
 

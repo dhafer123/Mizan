@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../features/budget/presentation/alerts/alerts_lifecycle.dart';
 import '../features/settings/presentation/lock/app_lock_gate.dart';
 import '../features/sync/presentation/sync_lifecycle.dart';
 import 'router/app_router.dart';
@@ -19,8 +20,9 @@ class MizanApp extends ConsumerWidget {
       darkTheme: AppTheme.dark(),
       routerConfig: ref.watch(appRouterProvider),
       // Above the navigator, so the lock covers every screen and sheet.
-      builder: (context, child) =>
-          SyncLifecycle(child: AppLockGate(child: child!)),
+      builder: (context, child) => SyncLifecycle(
+        child: AlertsLifecycle(child: AppLockGate(child: child!)),
+      ),
     );
   }
 }

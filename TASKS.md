@@ -156,9 +156,10 @@ The money and group logic is built and proven first, with no UI, because everyth
   *Done when:* unit tests use fixed synthetic histories (steady, weekend-heavy, irregular income, cold start).
   *Note:* `EstimateDailySpend` + `ForecastRunOut` (pure, integer-only). Starts from Home's money left and adds only later months' income (decided with the user). The range scales the rates by the 25th/75th percentile of 7-day totals, not daily ones (mostly 0 for students). `RecurringCost` is an input only: the app passes none until there's an entity (decided with the user). Home gets a forecast card with a session-long "count money owed to me" switch. Tests: `test/features/budget/domain/usecases/{estimate_daily_spend,forecast_run_out}_test.dart` (named histories plus properties: earliest ≤ expected ≤ latest, more money never runs out sooner, constant spend gives that rate). See ADR 0012.
 
-- [ ] **5.2 Alerts** (§4)
+- [x] **5.2 Alerts** (§4)
   Category ≥ 80% used, run-out before next income, unusual spending (> 2.5× the 4-week median). Local notifications, at most one a day per alert type.
   *Done when:* use case tests cover each alert's trigger and its cooldown.
+  *Note:* Decided with the user: "unusual" is a single expense against its category's median; each alert also fires once per situation (category per month, expense once, run-out again only if earlier); checked in the app on every change and after each background sync. `ComputeBudgetAlerts` / `SelectAlertsToSend` are pure; `SendBudgetAlerts` logs only what was shown. Local-only `sent_alerts` table (schema v7, no outbox: notifications are per phone). Push and alerts now share one `LocalNotifications` (the plugin is a singleton); alerts have their own Android channel. See ADR 0013.
 
 - [ ] **5.3 Forecast backtest**
   A script (in Dart or the notebook) that replays a history day by day and computes the mean absolute error in days.

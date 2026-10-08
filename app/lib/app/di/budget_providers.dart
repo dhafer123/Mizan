@@ -1,16 +1,23 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../features/budget/data/platform/local_alert_notifier.dart';
+import '../../features/budget/data/repositories/alert_log_impl.dart';
 import '../../features/budget/data/repositories/budget_repository_impl.dart';
 import '../../features/budget/data/repositories/income_source_repository_impl.dart';
+import '../../features/budget/domain/repositories/alert_log.dart';
+import '../../features/budget/domain/repositories/alert_notifier.dart';
 import '../../features/budget/domain/repositories/budget_repository.dart';
 import '../../features/budget/domain/repositories/income_source_repository.dart';
 import '../../features/budget/domain/usecases/add_income_source.dart';
+import '../../features/budget/domain/usecases/compute_budget_alerts.dart';
 import '../../features/budget/domain/usecases/compute_budget_overview.dart';
 import '../../features/budget/domain/usecases/compute_dashboard.dart';
 import '../../features/budget/domain/usecases/compute_money_available.dart';
 import '../../features/budget/domain/usecases/delete_income_source.dart';
 import '../../features/budget/domain/usecases/edit_income_source.dart';
 import '../../features/budget/domain/usecases/forecast_run_out.dart';
+import '../../features/budget/domain/usecases/request_alert_permission.dart';
+import '../../features/budget/domain/usecases/send_budget_alerts.dart';
 import '../../features/budget/domain/usecases/set_monthly_budget.dart';
 import '../../features/budget/domain/usecases/validate_income_source.dart';
 import '../../features/budget/domain/usecases/watch_budgets.dart';
@@ -79,3 +86,27 @@ ComputeDashboard computeDashboard(Ref ref) => ComputeDashboard(
 
 @Riverpod(keepAlive: true)
 ForecastRunOut forecastRunOut(Ref ref) => const ForecastRunOut();
+
+@Riverpod(keepAlive: true)
+AlertLog alertLog(Ref ref) =>
+    AlertLogImpl(ref.watch(appDatabaseProvider).sentAlertsDao);
+
+/// Override with a fake in tests.
+@Riverpod(keepAlive: true)
+AlertNotifier alertNotifications(Ref ref) =>
+    LocalAlertNotifier(ref.watch(localNotificationsProvider));
+
+@Riverpod(keepAlive: true)
+ComputeBudgetAlerts computeBudgetAlerts(Ref ref) => const ComputeBudgetAlerts();
+
+/// One instance per isolate, so its checks run one at a time.
+@Riverpod(keepAlive: true)
+SendBudgetAlerts sendBudgetAlerts(Ref ref) => SendBudgetAlerts(
+  ref.watch(alertLogProvider),
+  ref.watch(alertNotificationsProvider),
+  ref.watch(clockProvider),
+);
+
+@Riverpod(keepAlive: true)
+RequestAlertPermission requestAlertPermission(Ref ref) =>
+    RequestAlertPermission(ref.watch(alertNotificationsProvider));
