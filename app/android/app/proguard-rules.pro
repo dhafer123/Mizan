@@ -6,3 +6,10 @@
 -dontwarn com.google.protobuf.**
 -keep class com.google.ai.edge.localagents.** { *; }
 -dontwarn com.google.ai.edge.localagents.**
+
+# Receipt OCR (google_mlkit_text_recognition 0.16.0) bundles the Latin
+# model only; the plugin also names the other scripts' option classes.
+-dontwarn com.google.mlkit.vision.text.chinese.**
+-dontwarn com.google.mlkit.vision.text.devanagari.**
+-dontwarn com.google.mlkit.vision.text.japanese.**
+-dontwarn com.google.mlkit.vision.text.korean.**

@@ -28,14 +28,16 @@ class ConfirmItemsView extends ConsumerStatefulWidget {
   const ConfirmItemsView({
     super.key,
     required this.parse,
-    required this.fromVoice,
+    required this.source,
     required this.onSaved,
     required this.onRetry,
     this.sinceSpeech,
   });
 
   final QuickParse parse;
-  final bool fromVoice;
+
+  /// Saved with each expense: voice, typed (manual) or receipt.
+  final ExpenseSource source;
 
   /// Stopped and recorded once the items are on screen.
   final Stopwatch? sinceSpeech;
@@ -75,7 +77,7 @@ class _ConfirmItemsViewState extends ConsumerState<ConfirmItemsView> {
   @override
   void initState() {
     super.initState();
-    _date = ref.read(clockProvider).now().calendarDay;
+    _date = widget.parse.date ?? ref.read(clockProvider).now().calendarDay;
     _rows = [
       for (final item in widget.parse.items)
         _Row(
@@ -144,7 +146,7 @@ class _ConfirmItemsViewState extends ConsumerState<ConfirmItemsView> {
     setState(() => _saving = true);
     final result = await ref.read(addExpensesProvider)(
       expenses,
-      source: widget.fromVoice ? ExpenseSource.voice : ExpenseSource.manual,
+      source: widget.source,
     );
     if (!mounted) return;
     setState(() => _saving = false);
@@ -211,7 +213,10 @@ class _ConfirmItemsViewState extends ConsumerState<ConfirmItemsView> {
         ],
         const SizedBox(height: 16),
         if (_rows.isEmpty)
-          _NothingFound(onRetry: widget.onRetry)
+          _NothingFound(
+            receipt: widget.source == ExpenseSource.receipt,
+            onRetry: widget.onRetry,
+          )
         else ...[
           for (final (i, row) in _rows.indexed)
             _ItemCard(
@@ -400,8 +405,9 @@ class _ItemCard extends StatelessWidget {
 }
 
 class _NothingFound extends StatelessWidget {
-  const _NothingFound({required this.onRetry});
+  const _NothingFound({required this.receipt, required this.onRetry});
 
+  final bool receipt;
   final VoidCallback onRetry;
 
   @override
@@ -411,9 +417,12 @@ class _NothingFound extends StatelessWidget {
       children: [
         const Icon(Icons.search_off, size: 48),
         const SizedBox(height: 8),
-        const Text(
-          'No amount found. Say or type what you paid, like '
-          '"coffee 2.5 and taxi 8".',
+        Text(
+          receipt
+              ? 'No total found on this receipt. Try another photo, flat and '
+                    'in focus, or type it.'
+              : 'No amount found. Say or type what you paid, like '
+                    '"coffee 2.5 and taxi 8".',
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 8),

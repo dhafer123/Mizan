@@ -27,7 +27,8 @@ From `app/`: `dart run tool/forecast_backtest.dart <export.csv> --income AMOUNT:
 | 2026-10-08 | 61 phrases (EN/FR/Darija, 8 hard) | Rules only | 55 / 61 (90.2%); 0 wrong at confidence ≥ 60; all 8 hard ones sent to the fallback | |
 | | 30 held-out phrases | Rules only | | — |
 | 2026-10-08 | 30 held-out phrases | Rules + LLM fallback (Qwen2.5 0.5B) | not measured yet | 5.54 (median of 8 spoken phrases, release, Galaxy A16; recognizer in en-US) |
-| | 30+ receipts | OCR + extractor (+LLM) | total correct: | |
+| 2026-10-08 | 30+ real receipts | OCR + extractor, rules only | not measured yet (smoke: 6 stock templates, 4/6 before fixes; not a metric) | 0.36 (OCR + rules, median of 6, debug build, Galaxy A16) |
+| | 30+ receipts | OCR + extractor + LLM | total correct: | |
 | | Categorization | Memory + rules + LLM | | |
 | | Manual entry (baseline) | — | — | |
 

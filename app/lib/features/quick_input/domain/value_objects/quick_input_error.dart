@@ -21,4 +21,10 @@ enum QuickInputError {
   /// The model's answer didn't match the expected JSON, or named things
   /// that weren't said.
   llmInvalid,
+
+  /// The camera or the photo picker couldn't open.
+  cameraUnavailable,
+
+  /// Text recognition failed on the photo.
+  ocrFailed,
 }

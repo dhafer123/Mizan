@@ -19,5 +19,9 @@ abstract class QuickParse with _$QuickParse {
     /// Why the LLM tier didn't help, when the rules were unsure: not
     /// downloaded, failed, or answered nonsense. The rules' items are kept.
     QuickInputFailure? llmFailure,
+
+    /// The day it was spent, when the input says (a receipt's date);
+    /// otherwise the sheet uses today.
+    DateTime? date,
   }) = _QuickParse;
 }

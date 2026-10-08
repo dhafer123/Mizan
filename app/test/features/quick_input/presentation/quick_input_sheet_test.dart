@@ -17,6 +17,8 @@ import 'package:mizan/features/quick_input/presentation/quick_input_timings.dart
 import '../../../support/fake_category_repository.dart';
 import '../../../support/fake_expense_llm.dart';
 import '../../../support/fake_expense_repository.dart';
+import '../../../support/fake_receipt_camera.dart';
+import '../../../support/fake_receipt_scanner.dart';
 import '../../../support/fake_speech_recognizer.dart';
 import '../../../support/sequential_id_generator.dart';
 
@@ -30,6 +32,12 @@ class _Harness {
   final expenses = FakeExpenseRepository();
   final speech = FakeSpeechRecognizer();
   final llm = FakeExpenseLlm(installed: false);
+  final camera = FakeReceiptCamera();
+  final scanner = FakeReceiptScanner(const [
+    'Café Le Baron',
+    '05/10/2026',
+    'TOTAL  3,000',
+  ]);
   late ProviderContainer container;
   int? saved;
   var closed = false;
@@ -50,6 +58,8 @@ class _Harness {
           ),
           speechRecognizerProvider.overrideWithValue(speech),
           expenseLlmProvider.overrideWithValue(llm),
+          receiptCameraProvider.overrideWithValue(camera),
+          receiptScannerProvider.overrideWithValue(scanner),
         ],
         child: MaterialApp(
           home: Scaffold(
@@ -249,5 +259,91 @@ void main() {
     await tester.tap(find.text('Done'));
     await tester.pump();
     expect(h.speech.stops, greaterThanOrEqualTo(1));
+  });
+
+  group('receipts', () {
+    testWidgets('a scanned receipt shows its total and date, and saves as a '
+        'receipt expense', (tester) async {
+      final h = _Harness(tester);
+      await h.open(listen: false);
+
+      await tester.tap(find.text('Scan receipt'));
+      await tester.pumpAndSettle();
+
+      expect(h.camera.calls, [false]);
+      expect(find.text('Check before saving'), findsOneWidget);
+      expect(find.text('3.000'), findsOneWidget);
+      expect(find.text('Café Le Baron'), findsWidgets);
+      expect(find.textContaining('Oct 5'), findsOneWidget);
+      expect(h.expenses.live, isEmpty);
+
+      // The shop isn't a known word: pick the category.
+      await tester.tap(find.text('Category'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Food').last);
+      await tester.pumpAndSettle();
+      await h.save();
+
+      final saved = h.expenses.live.single;
+      expect(saved.amount, const Money(3000, Currency.tnd));
+      expect(saved.date, DateTime.utc(2026, 10, 5));
+      expect(saved.note, 'Café Le Baron');
+      expect(saved.source, ExpenseSource.receipt);
+    });
+
+    testWidgets('from photos uses the gallery', (tester) async {
+      final h = _Harness(tester);
+      await h.open(listen: false);
+      await tester.tap(find.text('From photos'));
+      await tester.pumpAndSettle();
+      expect(h.camera.calls, [true]);
+    });
+
+    testWidgets('backing out of the camera returns to typing', (tester) async {
+      final h = _Harness(tester);
+      h.camera.result = const Ok(null);
+      await h.open(listen: false);
+      await tester.tap(find.text('Scan receipt'));
+      await tester.pumpAndSettle();
+      expect(find.text('Quick add'), findsOneWidget);
+    });
+
+    testWidgets('a failed photo says why, and trying again takes another', (
+      tester,
+    ) async {
+      final h = _Harness(tester);
+      h.scanner.failure = const QuickInputFailure(QuickInputError.ocrFailed);
+      await h.open(listen: false);
+      await tester.tap(find.text('Scan receipt'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining("Couldn't read the photo"), findsOneWidget);
+      await tester.tap(find.text('Try again'));
+      await tester.pumpAndSettle();
+      expect(h.camera.calls, [false, false]);
+    });
+
+    testWidgets('no total on the receipt: an empty state for receipts', (
+      tester,
+    ) async {
+      final h = _Harness(tester);
+      h.scanner.rows = const ['Merci de votre visite'];
+      await h.open(listen: false);
+      await tester.tap(find.text('Scan receipt'));
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('No total found on this receipt'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('the receipt button works while listening', (tester) async {
+      final h = _Harness(tester);
+      await h.open();
+      await tester.tap(find.byTooltip('Scan a receipt'));
+      await tester.pumpAndSettle();
+      expect(h.camera.calls, [false]);
+      expect(find.text('3.000'), findsOneWidget);
+    });
   });
 }

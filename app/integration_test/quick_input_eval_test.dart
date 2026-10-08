@@ -1,7 +1,12 @@
 // Task 5.5's accuracy check, on the phone with the real assistant model:
 // rules only vs rules + LLM on the held-out phrases (held_out_phrases.dart).
 //
-// 1. Install the app and download the assistant (Settings → Quick input).
+// WARNING: flutter test uninstalls the app before and after the run,
+// wiping the phone's local Mizan data and the downloaded assistant. Use a
+// phone whose data is synced, or a spare one.
+//
+// 1. Put the phone on Wi-Fi: the fresh test build downloads the assistant
+//    (~550 MB) before it starts.
 // 2. With the phone connected: flutter test integration_test/quick_input_eval_test.dart
 //    It runs in debug mode, so the printed LLM time is only a guide; the
 //    METRICS timing comes from the release app (Settings → Voice timings).
@@ -43,10 +48,15 @@ void main() {
       reason: 'Write your 30 phrases in integration_test/held_out_phrases.dart',
     );
     final llm = GemmaExpenseLlm();
+    if (!await llm.isInstalled()) {
+      // ignore: avoid_print
+      print('Downloading the assistant (~550 MB)...');
+      await llm.install().drain<void>();
+    }
     expect(
       await llm.isInstalled(),
       isTrue,
-      reason: 'Download the assistant in Settings first.',
+      reason: "The assistant didn't download. Check the phone's connection.",
     );
     final both = ParseQuickInput(llm, timeout: const Duration(seconds: 60));
 

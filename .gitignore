@@ -16,3 +16,6 @@ htmlcov/
 
 # Personal expense exports (real spending data)
 mizan-expenses-*.csv
+
+# Real receipt photos for the 5.6 eval (personal data)
+receipts_eval/

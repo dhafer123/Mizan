@@ -19,6 +19,10 @@ class QuickInputFailure extends Failure {
       "The download didn't finish. Check the connection and try again.",
     QuickInputError.llmFailed => "The assistant couldn't read that.",
     QuickInputError.llmInvalid => "The assistant's answer didn't make sense.",
+    QuickInputError.cameraUnavailable =>
+      "Couldn't open the camera or your photos. Try again.",
+    QuickInputError.ocrFailed =>
+      "Couldn't read the photo. Try again with the receipt flat and in focus.",
   };
 
   @override
