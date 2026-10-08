@@ -22,6 +22,11 @@ class ExpenseRepositoryImpl implements ExpenseRepository {
       _guard(() => _dao.insertExpense(ExpenseMapper.toRow(expense)));
 
   @override
+  Future<Result<void, ExpenseFailure>> addAll(List<Expense> expenses) => _guard(
+    () => _dao.insertExpenses(expenses.map(ExpenseMapper.toRow).toList()),
+  );
+
+  @override
   Future<Result<void, ExpenseFailure>> update(Expense expense) =>
       _guard(() => _dao.updateExpense(ExpenseMapper.toRow(expense)));
 

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/app_router.dart';
 import '../../../expenses/presentation/expense_sheet/expense_sheet.dart';
 import '../../../expenses/presentation/shared/failure_message.dart';
+import '../../../quick_input/presentation/quick_input_sheet.dart';
 import '../../../sync/presentation/sync_status_button.dart';
 import '../../domain/value_objects/dashboard.dart';
 import 'dashboard_provider.dart';
@@ -59,13 +60,41 @@ class HomeScreen extends ConsumerWidget {
             ),
             loading: () => const Center(child: CircularProgressIndicator()),
           ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => showExpenseSheet(context),
-        icon: const Icon(Icons.add),
-        label: const Text('Add expense'),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          FloatingActionButton.small(
+            heroTag: 'quick-input',
+            onPressed: () => _quickInput(context),
+            tooltip: 'Say an expense',
+            child: const Icon(Icons.mic_none),
+          ),
+          const SizedBox(height: 12),
+          FloatingActionButton.extended(
+            heroTag: 'add-expense',
+            onPressed: () => showExpenseSheet(context),
+            icon: const Icon(Icons.add),
+            label: const Text('Add expense'),
+          ),
+        ],
       ),
     );
   }
+}
+
+Future<void> _quickInput(BuildContext context) async {
+  final saved = await showQuickInputSheet(context);
+  if (saved == null || saved == 0 || !context.mounted) return;
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(
+      SnackBar(
+        content: Text(
+          saved == 1 ? 'Added 1 expense.' : 'Added $saved expenses.',
+        ),
+      ),
+    );
 }
 
 class _DashboardBody extends StatelessWidget {
@@ -76,12 +105,12 @@ class _DashboardBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      // Clear of the add button and the system inset.
+      // Clear of the add buttons and the system inset.
       padding: EdgeInsets.fromLTRB(
         16,
         16,
         16,
-        88 + MediaQuery.paddingOf(context).bottom,
+        140 + MediaQuery.paddingOf(context).bottom,
       ),
       children: [
         MoneyLeftCard(dashboard: dashboard),

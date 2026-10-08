@@ -49,6 +49,13 @@ class ExpensesDao extends DatabaseAccessor<AppDatabase>
         () => into(expenses).insert(row),
       );
 
+  /// Inserts every row, each with its sync op, in one transaction.
+  Future<void> insertExpenses(List<ExpenseRow> rows) => transaction(() async {
+    for (final row in rows) {
+      await insertExpense(row);
+    }
+  });
+
   /// Saves [updated] and queues only the fields that changed. Sync metadata
   /// in [updated] is ignored. Returns false if nothing changed.
   ///

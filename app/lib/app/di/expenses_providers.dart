@@ -5,6 +5,7 @@ import '../../features/expenses/data/repositories/expense_repository_impl.dart';
 import '../../features/expenses/domain/repositories/category_repository.dart';
 import '../../features/expenses/domain/repositories/expense_repository.dart';
 import '../../features/expenses/domain/usecases/add_expense.dart';
+import '../../features/expenses/domain/usecases/add_expenses.dart';
 import '../../features/expenses/domain/usecases/archive_category.dart';
 import '../../features/expenses/domain/usecases/create_category.dart';
 import '../../features/expenses/domain/usecases/delete_expense.dart';
@@ -36,6 +37,13 @@ ValidateExpense validateExpense(Ref ref) =>
 
 @Riverpod(keepAlive: true)
 AddExpense addExpense(Ref ref) => AddExpense(
+  ref.watch(expenseRepositoryProvider),
+  ref.watch(idGeneratorProvider),
+  ref.watch(validateExpenseProvider),
+);
+
+@Riverpod(keepAlive: true)
+AddExpenses addExpenses(Ref ref) => AddExpenses(
   ref.watch(expenseRepositoryProvider),
   ref.watch(idGeneratorProvider),
   ref.watch(validateExpenseProvider),

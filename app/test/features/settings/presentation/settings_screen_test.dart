@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mizan/app/di/auth_providers.dart';
 import 'package:mizan/app/di/core_providers.dart';
 import 'package:mizan/app/di/expenses_providers.dart';
+import 'package:mizan/app/di/quick_input_providers.dart';
 import 'package:mizan/app/di/settings_providers.dart';
 import 'package:mizan/app/router/app_router.dart';
 import 'package:mizan/core/clock/fake_clock.dart';
@@ -21,6 +22,7 @@ import 'package:mizan/features/settings/presentation/settings_screen.dart';
 import '../../../support/fake_auth_repository.dart';
 import '../../../support/fake_biometric_authenticator.dart';
 import '../../../support/fake_category_repository.dart';
+import '../../../support/fake_expense_llm.dart';
 import '../../../support/fake_expense_repository.dart';
 import '../../../support/fake_file_exporter.dart';
 import '../../../support/fake_lock_settings_repository.dart';
@@ -62,6 +64,7 @@ Future<_Setup> _pump(WidgetTester tester, [_Setup? setup]) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+        expenseLlmProvider.overrideWithValue(FakeExpenseLlm()),
         clockProvider.overrideWithValue(
           FakeClock(DateTime.utc(2026, 10, 6, 9)),
         ),

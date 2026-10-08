@@ -7,6 +7,9 @@ import '../value_objects/expense_failure.dart';
 abstract interface class ExpenseRepository {
   Future<Result<void, ExpenseFailure>> add(Expense expense);
 
+  /// Adds all of [expenses] in one transaction: all are saved, or none.
+  Future<Result<void, ExpenseFailure>> addAll(List<Expense> expenses);
+
   /// Fails with `notFound` if the expense is missing or deleted.
   Future<Result<void, ExpenseFailure>> update(Expense expense);
 

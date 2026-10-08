@@ -71,6 +71,26 @@ void main() {
         'source': 'manual',
       });
     });
+
+    test('insertExpenses stores every row with its op, or none', () async {
+      await db.expensesDao.insertExpenses([
+        _expense(id: 'e1'),
+        _expense(id: 'e2', note: 'taxi'),
+      ]);
+      expect(
+        await db.expensesDao.findById('e2'),
+        _expense(id: 'e2', note: 'taxi'),
+      );
+      expect((await outbox()).map((op) => op.entityId), ['e1', 'e2']);
+
+      // e3 is fine, e1 again isn't: neither is kept.
+      await expectLater(
+        db.expensesDao.insertExpenses([_expense(id: 'e3'), _expense(id: 'e1')]),
+        throwsA(anything),
+      );
+      expect(await db.expensesDao.findById('e3'), isNull);
+      expect(await outbox(), hasLength(2));
+    });
   });
 
   group('update', () {

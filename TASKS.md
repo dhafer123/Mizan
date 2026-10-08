@@ -170,9 +170,10 @@ The money and group logic is built and proven first, with no UI, because everyth
   *Done when:* there's a table-driven test of 50+ phrases, and the rule-only accuracy is in METRICS.md.
   *Note:* `ParseExpenseText` (pure) → items (label, `Money`, confidence 0–100); below `fallbackBelow` (60) the LLM tier (5.5) takes over. Decided with the user: in TND a bare whole number ≥ 1000 is millimes ("kaskrout 3500" = 3.500 DT). `ExpenseKeywords` (FR/EN/Darija → default category) raises confidence now and is the categorizer's rules tier in 5.7. Numbers in words, dates and quantities are left to the LLM. Test: `test/features/quick_input/domain/usecases/parse_expense_text_test.dart` (61 phrases, 8 marked hard, plus a round-trip property test). See ADR 0015.
 
-- [ ] **5.5 Quick input: voice + LLM fallback** (§8)
+- [x] **5.5 Quick input: voice + LLM fallback** (§8)
   `SpeechRecognizer` interface with a speech_to_text implementation. The LLM fallback (flutter_gemma) returns JSON validated against a schema. A confirmation sheet shows the result.
   *Done when:* accuracy (rules vs rules + LLM) on a held-out set of 30 phrases you wrote yourself, and the median time from end of speech to the confirmation sheet, are in METRICS.md.
+  *Note:* Ticked by the user's call after the phone check (2026-10-08): speech works; median 5.5 s from end of speech to items (8 phrases, release, Galaxy A16). **Held-out accuracy (rules vs rules + LLM) not measured**: the 30 phrases are in `integration_test/held_out_phrases.dart`, run `quick_input_eval_test.dart` when wanted. Seen on the phone: English is read well; French/Darija less so, mostly because the recognizer follows the phone's language (en-US). A speech-language setting is in v2. Decided with the user: flutter_gemma **0.12.6** (newer needs Flutter ≥ 3.44, or sqlite3 3.x against drift's 2.9.4 pin), **Qwen2.5 0.5B** `.task` downloaded from HuggingFace (Apache-2.0, not gated, ~547 MB, opt-in in Settings), speech_to_text **7.4.0**; integration_test added (SDK). `ParseQuickInput`: rules first, LLM below 60, JSON checked by `ReadLlmAnswer` (labels must come from the phrase), and rules again on a failure or a 20 s timeout. Mic on Home → listening sheet (or typing) → confirmation sheet (edit, remove, category from keywords) → `AddExpenses` (all or none, one transaction). The arm64 APK grows ~24 → ~88 MB (MediaPipe natives; unused engines excluded). See ADR 0016.
 
 - [ ] **5.6 Quick input: receipt**
   ML Kit OCR → total and date extractor → LLM fallback → confirmation sheet.
@@ -221,6 +222,7 @@ The money and group logic is built and proven first, with no UI, because everyth
 - Monthly insights report
 - Multi-currency for students abroad
 - Whisper on-device speech recognition
+- Speech language setting for quick input (French / English / Arabic-Tunisia); the recognizer follows the phone's language today (seen in 5.5)
 
 ## Notes
 

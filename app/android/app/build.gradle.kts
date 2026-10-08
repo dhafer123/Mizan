@@ -6,6 +6,22 @@ plugins {
 }
 
 android {
+    // flutter_gemma bundles engines Mizan never calls: the .litertlm engine
+    // (the assistant is a MediaPipe .task model) and RAG (embeddings, text
+    // chunking, vector store). Each is loaded only when its API is used, so
+    // leaving them out saves about 70 MB per ABI.
+    packaging {
+        jniLibs {
+            excludes += setOf(
+                "**/liblitertlm_jni.so",
+                "**/libgecko_embedding_model_jni.so",
+                "**/libgemma_embedding_model_jni.so",
+                "**/libtext_chunker_jni.so",
+                "**/libsqlite_vector_store_jni.so",
+            )
+        }
+    }
+
     namespace = "com.mizan.mizan"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
@@ -38,6 +54,10 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
     }
 }

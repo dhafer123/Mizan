@@ -35,6 +35,16 @@ class FakeExpenseRepository implements ExpenseRepository {
   }
 
   @override
+  Future<Result<void, ExpenseFailure>> addAll(List<Expense> expenses) async {
+    if (writeFailure case final failure?) return Err(failure);
+    for (final e in expenses) {
+      _live[e.id] = e;
+    }
+    _changes.add(null);
+    return const Ok(null);
+  }
+
+  @override
   Future<Result<void, ExpenseFailure>> update(Expense expense) async {
     if (writeFailure case final failure?) return Err(failure);
     if (!_live.containsKey(expense.id)) return _notFound;
