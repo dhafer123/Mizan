@@ -285,6 +285,33 @@ void main() {
     expect(f.runOut, _day(11, 17));
   });
 
+  group('runOutDay', () {
+    test('spends what spendOn says each day, with later income', () {
+      final day = ForecastRunOut.runOutDay(
+        today: _day(10, 30),
+        start: _dt(20),
+        // 31 Oct: 20 → 0. 1 Nov: +50 income − 30 → 20. 2 Nov: −30.
+        spendOn: (day) => day == _day(10, 31) ? _dt(20) : _dt(30),
+        until: _day(12, 31),
+        incomes: [
+          _income('Grant', 50, const IncomeSchedule.monthly(dayOfMonth: 1)),
+        ],
+      );
+      expect(day, _day(11, 2));
+    });
+
+    test('stops at until, which is included', () {
+      DateTime? runOut(DateTime until) => ForecastRunOut.runOutDay(
+        today: _today,
+        start: _dt(25),
+        spendOn: (_) => _dt(10),
+        until: until,
+      );
+      expect(runOut(_day(10, 9)), isNull);
+      expect(runOut(_day(10, 10)), _day(10, 10));
+    });
+  });
+
   group('properties', () {
     Glados2(any.forecastHistory, any.intInRange(0, 3000000)).test(
       'earliest ≤ expected ≤ latest',

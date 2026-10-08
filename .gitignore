@@ -13,3 +13,6 @@ venv/
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Personal expense exports (real spending data)
+mizan-expenses-*.csv

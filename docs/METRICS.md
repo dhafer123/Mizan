@@ -15,6 +15,8 @@ Rules: release build, real device, median of 10 runs for timings. Write the date
 
 ## Forecast (backtest on real data)
 
+From `app/`: `dart run tool/forecast_backtest.dart <export.csv> --income AMOUNT:WHEN --budget AMOUNT --end <export day>` (ADR 0014). Record the learned-rate MAE over exact days, and in Notes the exact / lower-bound / censored day counts, the MAE with lower bounds, the bias and the in-range share.
+
 | Date | Days of data | Mean abs. error (days) | Notes |
 |---|---|---|---|
 

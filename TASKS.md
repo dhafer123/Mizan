@@ -164,6 +164,7 @@ The money and group logic is built and proven first, with no UI, because everyth
 - [ ] **5.3 Forecast backtest**
   A script (in Dart or the notebook) that replays a history day by day and computes the mean absolute error in days.
   *Done when:* the error on your own 4+ weeks of data is in METRICS.md.
+  *Note:* Tool built, **not ticked: needs the real run.** `dart run tool/forecast_backtest.dart <export.csv> --income AMOUNT:WHEN --budget AMOUNT --end <export day>` (from `app/`). Replays at the end of each day with data up to that day; the actual date comes from `ForecastRunOut.runOutDay` (pulled out of the forecast) spending the real amounts, so both sides count money the same way. Days the data can't settle are lower bounds or censored, and reported apart (ADR 0014). Tests: `test/tool/backtest/`.
 
 - [ ] **5.4 Quick input: rule parser** (§8)
   "coffee 3.5 and taxi 8", "3.5 café w 8 taxi", amounts with "," or ".", in FR / EN / Darija-in-Latin-letters. Returns items with a confidence score.

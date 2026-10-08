@@ -204,7 +204,7 @@ The question is: when does my available money hit 0?
 - **Projection**: step day by day from tomorrow, subtracting the expected spend and recurring costs and adding income from later months (this month's is already in money left), until the balance goes below 0 or the horizon (60 days) ends.
 - **Range**: repeat the projection with the rates scaled by the 25th and 75th percentile of 7-day spending totals (daily totals are too lumpy), giving a "run-out between the 21st and the 25th" range (ADR 0012).
 - **Cold start** (< 14 days of data): use the budget as the spending rate and say so in the UI.
-- **Evaluation (backtest)**: on real usage data, at each day *d* forecast the run-out date using only data before *d*, then compare with the actual date. Report the mean absolute error in days.
+- **Evaluation (backtest)**: on real usage data, at each day *d* forecast the run-out date using only data before *d*, then compare with the actual date. Report the mean absolute error in days (`app/tool/forecast_backtest.dart` on the app's CSV export). The actual date uses the forecast's own accounting, and days the data can't settle are counted as lower bounds or censored, not dropped silently (ADR 0014).
 
 It's a pure Dart function with no ML library, which keeps it explainable and testable. A learned model can replace it later behind the same interface.
 

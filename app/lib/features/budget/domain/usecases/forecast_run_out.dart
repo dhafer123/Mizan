@@ -112,12 +112,39 @@ class ForecastRunOut {
     SpendRate rate,
     List<IncomeSource> incomes,
     List<RecurringCost> recurring,
-  ) {
+  ) => runOutDay(
+    today: day0,
+    start: start,
+    spendOn: rate.on,
+    until: day0.add(const Duration(days: horizonDays)),
+    incomes: incomes,
+    recurring: recurring,
+  );
+
+  /// The first day after [today], up to [until], that [start] goes below 0
+  /// when [spendOn] is spent each day, with later months' income and the
+  /// [recurring] costs counted as in the forecast. [today] if [start]
+  /// already is below 0; null if the money lasts to [until].
+  ///
+  /// The forecast spends its expected rate; the backtest (task 5.3) spends
+  /// what was really spent, so both count money the same way.
+  static DateTime? runOutDay({
+    required DateTime today,
+    required Money start,
+    required Money Function(DateTime day) spendOn,
+    required DateTime until,
+    List<IncomeSource> incomes = const [],
+    List<RecurringCost> recurring = const [],
+  }) {
+    final day0 = today.calendarDay;
     if (start.isNegative) return day0;
     final thisMonth = YearMonth.of(day0);
     var balance = start;
-    for (var i = 1; i <= horizonDays; i++) {
-      final day = day0.add(Duration(days: i));
+    for (
+      var day = day0.add(const Duration(days: 1));
+      !day.isAfter(until);
+      day = day.add(const Duration(days: 1))
+    ) {
       final month = YearMonth.of(day);
       if (month.compareTo(thisMonth) > 0) {
         for (final source in incomes) {
@@ -130,7 +157,7 @@ class ForecastRunOut {
           balance -= cost.amount;
         }
       }
-      balance -= rate.on(day);
+      balance -= spendOn(day);
       if (balance.isNegative) return day;
     }
     return null;
