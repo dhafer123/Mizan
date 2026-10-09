@@ -221,7 +221,7 @@ receipt ─► OCR (ML Kit) ──┘
   1. A deterministic rule parser handles amounts, "and" / "et" / "w" separators and known merchant keywords. It's fast, free and covers most simple phrases In TND, a bare whole number ≥ 1000 is millimes ("kaskrout 3500" = 3.500 DT). Each item gets a 0–100 confidence; below 60 the LLM tier runs (ADR 0015).
   2. If the rules give low confidence, fall back to an on-device LLM (`flutter_gemma` 0.12.6 with Qwen2.5 0.5B, an opt-in ~550 MB download) that returns JSON matching a fixed schema, validated before use. Labels must come from the phrase; a failure, a timeout or an invalid answer keeps the rules' reading (ADR 0016).
 - **Receipt**: ML Kit text recognition (on-device), printed rows rebuilt from the text boxes, then a rule extractor for TOTAL / date lines (skipping subtotal, tax, cash and change), with an LLM fallback for messy receipts whose total must be one printed on the receipt. One receipt is one expense (ADR 0017).
-- **Categorizer**: (1) the user's own memory (merchant or keyword → category, learned from corrections), then (2) rules, then (3) LLM.
+- **Categorizer**: (1) the user's own memory (merchant or keyword → category, learned from corrections), then (2) rules, then (3) LLM. The memory is computed from the user's expenses, not stored: the last category saved for a note, or for a distinctive word, wins (ADR 0018).
 - **Always confirm**: nothing parsed is saved without the user seeing it and being able to edit it.
 
 ## 9. Server (Django)

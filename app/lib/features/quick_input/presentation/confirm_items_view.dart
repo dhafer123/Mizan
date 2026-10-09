@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -16,14 +18,19 @@ import '../../expenses/domain/value_objects/expense_source.dart';
 import '../../expenses/presentation/shared/categories_provider.dart';
 import '../../expenses/presentation/shared/failure_message.dart';
 import '../domain/usecases/parse_expense_text.dart';
+import '../domain/value_objects/category_memory.dart';
+import '../domain/value_objects/category_source.dart';
 import '../domain/value_objects/parse_method.dart';
 import '../domain/value_objects/quick_input_error.dart';
 import '../domain/value_objects/quick_parse.dart';
+import 'category_memory_provider.dart';
 import 'quick_input_timings.dart';
 
 /// The confirmation step: every item read from the phrase, editable, saved
 /// only when the user taps Save (CLAUDE.md rule 7). Unsure items are
-/// marked so the eye goes to them.
+/// marked so the eye goes to them. Categories are suggested from the
+/// user's past choices, then keywords, then (in the background) the
+/// assistant; saving teaches the next suggestion.
 class ConfirmItemsView extends ConsumerStatefulWidget {
   const ConfirmItemsView({
     super.key,
@@ -60,6 +67,10 @@ class _Row {
   final bool unsure;
   String? categoryId;
   var categoryPicked = false;
+
+  /// Where the pre-selected category came from; null once the user picks.
+  CategorySource? suggestedBy;
+  var askedAssistant = false;
   String? error;
 
   void dispose() {
@@ -105,13 +116,42 @@ class _ConfirmItemsViewState extends ConsumerState<ConfirmItemsView> {
     super.dispose();
   }
 
-  /// Fills in the suggested category of rows the user hasn't picked for.
-  void _suggest(List<Category> categories) {
+  /// Fills in a suggested category for rows the user hasn't picked for:
+  /// memory or keywords now, else the assistant in the background.
+  void _suggest(List<Category> categories, CategoryMemory memory) {
     final suggest = ref.read(suggestCategoryProvider);
     for (final row in _rows) {
       if (row.categoryPicked || row.categoryId != null) continue;
-      row.categoryId = suggest(row.note.text, categories: categories);
+      final suggestion = suggest(
+        row.note.text,
+        categories: categories,
+        memory: memory,
+      );
+      if (suggestion != null) {
+        row
+          ..categoryId = suggestion.categoryId
+          ..suggestedBy = suggestion.source;
+      } else if (!row.askedAssistant) {
+        row.askedAssistant = true;
+        unawaited(_askAssistant(row, categories));
+      }
     }
+  }
+
+  Future<void> _askAssistant(_Row row, List<Category> categories) async {
+    final suggestion = await ref.read(askLlmCategoryProvider)(
+      row.note.text,
+      categories: categories,
+    );
+    if (suggestion == null || !mounted) return;
+    if (row.categoryPicked || row.categoryId != null || !_rows.contains(row)) {
+      return;
+    }
+    setState(() {
+      row
+        ..categoryId = suggestion.categoryId
+        ..suggestedBy = suggestion.source;
+    });
   }
 
   Future<void> _save() async {
@@ -152,6 +192,8 @@ class _ConfirmItemsViewState extends ConsumerState<ConfirmItemsView> {
     setState(() => _saving = false);
     switch (result) {
       case Ok(:final value):
+        // The next suggestions learn from what was just saved.
+        ref.invalidate(categoryMemoryProvider);
         widget.onSaved(value.length);
       case Err(:final failure):
         setState(() {
@@ -181,7 +223,13 @@ class _ConfirmItemsViewState extends ConsumerState<ConfirmItemsView> {
     final theme = Theme.of(context);
     final parse = widget.parse;
     final categories = ref.watch(categoriesProvider);
-    if (categories case AsyncData(:final value)) _suggest(value);
+    final memory = ref.watch(categoryMemoryProvider);
+    if ((categories, memory) case (
+      AsyncData(value: final all),
+      AsyncData(value: final learned),
+    )) {
+      _suggest(all, learned);
+    }
 
     final note = switch (parse) {
       QuickParse(method: ParseMethod.llm) => 'Read by the on-device assistant.',
@@ -227,6 +275,7 @@ class _ConfirmItemsViewState extends ConsumerState<ConfirmItemsView> {
                 row
                   ..categoryId = id
                   ..categoryPicked = true
+                  ..suggestedBy = null
                   ..error = null;
               }),
               onRemove: () => setState(() => _rows.removeAt(i).dispose()),
@@ -377,12 +426,19 @@ class _ItemCard extends StatelessWidget {
               padding: const EdgeInsets.only(right: 8),
               child: categories.when(
                 data: (all) => DropdownButtonFormField<String>(
+                  // Rebuilt when a late suggestion (the assistant) arrives.
+                  key: ValueKey(row.categoryId),
                   initialValue: row.categoryId,
                   isDense: true,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Category',
                     isDense: true,
-                    border: OutlineInputBorder(),
+                    border: const OutlineInputBorder(),
+                    helperText: switch (row.suggestedBy) {
+                      CategorySource.memory => 'From your past choices',
+                      CategorySource.llm => 'Suggested by the assistant',
+                      CategorySource.rules || null => null,
+                    },
                   ),
                   items: [
                     for (final c in all)

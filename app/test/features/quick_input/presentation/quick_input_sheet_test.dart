@@ -346,4 +346,47 @@ void main() {
       expect(find.text('3.000'), findsOneWidget);
     });
   });
+
+  group('categories', () {
+    Future<void> typeAndRead(WidgetTester tester, String text) async {
+      await tester.enterText(find.byType(TextField), text);
+      await tester.tap(find.text('Read'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('one correction changes the next suggestion', (tester) async {
+      final h = _Harness(tester);
+      await h.open(listen: false);
+      await typeAndRead(tester, 'kahwa 2');
+      // Keywords: food.
+      expect(find.text('Food'), findsOneWidget);
+
+      await tester.tap(find.text('Food'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Leisure').last);
+      await tester.pumpAndSettle();
+      await h.save();
+      expect(h.expenses.live.single.categoryId, 'leisure');
+
+      // Next time, the same note is filed as the user did.
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+      await typeAndRead(tester, 'kahwa 3');
+      expect(find.text('Leisure'), findsOneWidget);
+      expect(find.text('From your past choices'), findsOneWidget);
+    });
+
+    testWidgets('the assistant suggests for an unknown note', (tester) async {
+      final h = _Harness(tester);
+      h.llm
+        ..installed = true
+        ..answer = const Ok('{"category":"Study"}');
+      await h.open(listen: false);
+      await typeAndRead(tester, 'zorblax 12');
+
+      expect(find.text('Study'), findsOneWidget);
+      expect(find.text('Suggested by the assistant'), findsOneWidget);
+      expect(h.llm.prompts.single, contains('"zorblax"'));
+    });
+  });
 }

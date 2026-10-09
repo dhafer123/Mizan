@@ -8,9 +8,11 @@ import '../../features/quick_input/domain/repositories/expense_llm.dart';
 import '../../features/quick_input/domain/repositories/receipt_camera.dart';
 import '../../features/quick_input/domain/repositories/receipt_scanner.dart';
 import '../../features/quick_input/domain/repositories/speech_recognizer.dart';
+import '../../features/quick_input/domain/usecases/ask_llm_category.dart';
 import '../../features/quick_input/domain/usecases/install_assistant.dart';
 import '../../features/quick_input/domain/usecases/is_assistant_installed.dart';
 import '../../features/quick_input/domain/usecases/listen_to_speech.dart';
+import '../../features/quick_input/domain/usecases/load_category_memory.dart';
 import '../../features/quick_input/domain/usecases/parse_quick_input.dart';
 import '../../features/quick_input/domain/usecases/read_receipt.dart';
 import '../../features/quick_input/domain/usecases/scan_receipt.dart';
@@ -18,6 +20,8 @@ import '../../features/quick_input/domain/usecases/stop_listening.dart';
 import '../../features/quick_input/domain/usecases/suggest_category.dart';
 import '../../features/quick_input/domain/usecases/take_receipt_photo.dart';
 import '../../features/quick_input/domain/usecases/uninstall_assistant.dart';
+
+import 'expenses_providers.dart';
 
 part 'quick_input_providers.g.dart';
 
@@ -69,3 +73,11 @@ ScanReceipt scanReceipt(Ref ref) => ScanReceipt(
   ref.watch(receiptScannerProvider),
   ReadReceipt(ref.watch(expenseLlmProvider)),
 );
+
+@Riverpod(keepAlive: true)
+LoadCategoryMemory loadCategoryMemory(Ref ref) =>
+    LoadCategoryMemory(ref.watch(expenseRepositoryProvider));
+
+@Riverpod(keepAlive: true)
+AskLlmCategory askLlmCategory(Ref ref) =>
+    AskLlmCategory(ref.watch(expenseLlmProvider));
