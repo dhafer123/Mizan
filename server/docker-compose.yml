@@ -20,7 +20,12 @@ services:
       retries: 30
 
   api:
-    build: .
+    build:
+      context: .
+      args:
+        REQUIREMENTS: requirements-dev.txt
+    # The image's default command is gunicorn (production, render.yaml).
+    command: ["sh", "-c", "python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"]
     environment:
       DJANGO_DEBUG: "1"
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-}

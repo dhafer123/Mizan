@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../features/auth/presentation/login/login_screen.dart';
 import '../../features/auth/presentation/sign_up/sign_up_screen.dart';
+import '../../features/beta/presentation/feedback_screen.dart';
 import '../../features/budget/presentation/budget/budget_screen.dart';
 import '../../features/budget/presentation/home/home_screen.dart';
 import '../../features/budget/presentation/income/income_screen.dart';
@@ -25,6 +26,7 @@ abstract final class AppRoutes {
   static const income = '/income';
   static const settings = '/settings';
   static const pin = '/settings/pin';
+  static const feedback = '/settings/feedback';
   static const login = '/login';
   static const signUp = '/signup';
   static const groups = '/groups';
@@ -67,6 +69,10 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: AppRoutes.pin,
         builder: (context, state) => const PinSetupScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.feedback,
+        builder: (context, state) => const FeedbackScreen(),
       ),
       GoRoute(
         path: AppRoutes.login,

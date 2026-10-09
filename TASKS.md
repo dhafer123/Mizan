@@ -188,6 +188,7 @@ The money and group logic is built and proven first, with no UI, because everyth
 - [ ] **5.8 Beta release to classmates**
   Distribute through Play Store internal testing (or APK). Add a simple in-app feedback button and an opt-in, anonymous usage counter (expenses logged per day, input method used).
   *Done when:* 10+ students have it installed.
+  *Note:* Code and release tooling done; **not ticked: needs the deploy and 10+ installs.** Decided with the user: an APK (not Play Store), debug-signed, and the server on Render's free plan (`render.yaml`, gunicorn added, approved). Feedback goes to `POST /beta/feedback`. Usage counts are opt-in, with a random install id and no token, computed from expense rows (UUIDv7 time + source), and the last 14 days are resent at most once a day. Settings > Beta has both. Read the results with `manage.py beta_report`. Steps: `docs/beta-release.md`. Build: `app/tool/build_beta.ps1 -ApiUrl https://…`. See ADR 0019.
 
 **Gate 5:** the forecast error and input accuracy are measured, and the beta is live.
 

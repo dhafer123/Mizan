@@ -7,4 +7,5 @@ urlpatterns = [
     path("auth/", include("accounts.urls")),
     path("sync/", include("sync.urls")),
     path("groups/", include("groups.urls")),
+    path("beta/", include("beta.urls")),
 ]

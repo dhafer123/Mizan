@@ -9,6 +9,7 @@ Django REST Framework + PostgreSQL. Design: `docs/ARCHITECTURE.md` §6 (sync) an
 | `sync` | `/sync/push`, `/sync/pull`, applied-op log, conflict policy (3.4–3.5) |
 | `groups` | Groups, members, invites (4.1) |
 | `notifications` | FCM pushes (4.6) |
+| `beta` | Anonymous feedback and opt-in usage counts (5.8) |
 
 ## API
 
@@ -22,6 +23,8 @@ Django REST Framework + PostgreSQL. Design: `docs/ARCHITECTURE.md` §6 (sync) an
 | `GET /auth/me` | `Authorization: Bearer <access>` → `{id, email, displayName}` |
 | `PUT /auth/devices/<id>/push-token` | `{token}` (`""` stops pushes) → 204; 404 `device_not_found` if the device isn't this account's |
 | `GET /sync/pull?since=&limit=` | `{changes: [{entity, serverSeq, state}], cursor, hasMore}`; own rows, active groups' rows, history; see `sync/pull.py` |
+| `POST /beta/feedback` | `{message, contact?, appVersion}` → 201. Anonymous (any token is ignored), throttled per IP |
+| `POST /beta/usage` | `{installId: uuid, appVersion, days: [{day, manual, voice, receipt}] (≤31)}` → 204; replaces those days' counts. Anonymous |
 | `POST /sync/push` | `{deviceId, ops: [≤200]}` → `{results: [{opId, entity, entityId, status, reason?, field?, state}]}`; see `sync/push.py` and ADR 0006 |
 
 `device` is `{id: uuid, platform: "android" | "ios", name?}`. Push notifications
@@ -29,6 +32,15 @@ Django REST Framework + PostgreSQL. Design: `docs/ARCHITECTURE.md` §6 (sync) an
 it they are only logged. Run `python manage.py send_settle_up_reminders` weekly
 (cron) for the settle-up reminders. Errors are always
 `{"code", "detail", "fields"?}`; see `mizan/errors.py` and ADR 0004.
+
+`python manage.py beta_report` prints the beta's usage counts and latest feedback (ADR 0019).
+
+## Production (beta)
+
+`render.yaml` (repo root) deploys this image to Render with gunicorn and a
+Postgres database; steps in `docs/beta-release.md`. The image's default
+command is gunicorn on `$PORT`; `docker-compose.yml` overrides it with the
+dev server.
 
 ## Run with Docker
 

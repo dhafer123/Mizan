@@ -1,0 +1,49 @@
+# Render Blueprint for the beta server (task 5.8, ADR 0019): the Django API
+# from server/Dockerfile (gunicorn) and a Postgres database, both on the free
+# plan in Frankfurt. Render serves it over HTTPS at
+# https://<service name>.onrender.com. Steps: docs/beta-release.md.
+databases:
+  - name: mizan-db
+    plan: free
+    region: frankfurt
+    databaseName: mizan
+    user: mizan
+
+services:
+  - type: web
+    name: mizan-api
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./server/Dockerfile
+    dockerContext: ./server
+    healthCheckPath: /health
+    # Only server changes redeploy it.
+    buildFilter:
+      paths:
+        - server/**
+        - render.yaml
+    envVars:
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: POSTGRES_HOST
+        fromDatabase: { name: mizan-db, property: host }
+      - key: POSTGRES_PORT
+        fromDatabase: { name: mizan-db, property: port }
+      - key: POSTGRES_DB
+        fromDatabase: { name: mizan-db, property: database }
+      - key: POSTGRES_USER
+        fromDatabase: { name: mizan-db, property: user }
+      - key: POSTGRES_PASSWORD
+        fromDatabase: { name: mizan-db, property: password }
+      # gunicorn keeps a fixed pool of threads, so connections can be reused.
+      - key: DJANGO_CONN_MAX_AGE
+        value: "60"
+      # 512 MB on the free plan.
+      - key: WEB_CONCURRENCY
+        value: "2"
+      # Push notifications: upload the Firebase key as a Secret File named
+      # fcm-mizan.json and set this to /etc/secrets/fcm-mizan.json. Empty
+      # means pushes are only logged.
+      - key: FCM_CREDENTIALS_FILE
+        sync: false

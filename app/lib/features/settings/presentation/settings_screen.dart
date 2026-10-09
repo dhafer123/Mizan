@@ -6,6 +6,7 @@ import '../../../app/di/settings_providers.dart';
 import '../../../app/router/app_router.dart';
 import '../../../core/result/result.dart';
 import '../../auth/presentation/account_section.dart';
+import '../../beta/presentation/beta_settings_section.dart';
 import '../../expenses/presentation/shared/failure_message.dart';
 import '../../quick_input/presentation/assistant_settings_section.dart';
 import '../domain/value_objects/lock_status.dart';
@@ -13,7 +14,8 @@ import 'lock/app_lock_controller.dart';
 import 'lock/lock_status_provider.dart';
 
 /// The account (sign in / log out), the app lock (PIN, biometrics),
-/// exporting expenses, and the quick input assistant.
+/// exporting expenses, the quick input assistant, and the beta (feedback,
+/// usage counts).
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
@@ -196,6 +198,8 @@ class _SettingsListState extends ConsumerState<_SettingsList> {
         ),
         header('Quick input'),
         const AssistantSettingsSection(),
+        header('Beta'),
+        const BetaSettingsSection(),
       ],
     );
   }

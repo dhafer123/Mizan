@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mizan/app/di/auth_providers.dart';
+import 'package:mizan/app/di/beta_providers.dart';
 import 'package:mizan/app/di/core_providers.dart';
 import 'package:mizan/app/di/expenses_providers.dart';
 import 'package:mizan/app/di/quick_input_providers.dart';
@@ -11,6 +12,9 @@ import 'package:mizan/app/router/app_router.dart';
 import 'package:mizan/core/clock/fake_clock.dart';
 import 'package:mizan/core/money/currency.dart';
 import 'package:mizan/core/money/money.dart';
+import 'package:mizan/features/beta/domain/value_objects/beta_error.dart';
+import 'package:mizan/features/beta/domain/value_objects/beta_failure.dart';
+import 'package:mizan/features/beta/presentation/feedback_screen.dart';
 import 'package:mizan/features/expenses/domain/entities/default_categories.dart';
 import 'package:mizan/features/expenses/domain/entities/expense.dart';
 import 'package:mizan/features/settings/domain/entities/lock_settings.dart';
@@ -20,12 +24,14 @@ import 'package:mizan/features/settings/presentation/pin/pin_setup_screen.dart';
 import 'package:mizan/features/settings/presentation/settings_screen.dart';
 
 import '../../../support/fake_auth_repository.dart';
+import '../../../support/fake_beta_repository.dart';
 import '../../../support/fake_biometric_authenticator.dart';
 import '../../../support/fake_category_repository.dart';
 import '../../../support/fake_expense_llm.dart';
 import '../../../support/fake_expense_repository.dart';
 import '../../../support/fake_file_exporter.dart';
 import '../../../support/fake_lock_settings_repository.dart';
+import '../../../support/fake_usage_sharing_repository.dart';
 
 Expense _expense(String id) => Expense(
   id: id,
@@ -43,6 +49,8 @@ class _Setup {
   final FakeBiometricAuthenticator biometrics;
   final expenses = FakeExpenseRepository([_expense('a'), _expense('b')]);
   final exporter = FakeFileExporter();
+  final sharing = FakeUsageSharingRepository();
+  final beta = FakeBetaRepository();
 }
 
 Future<_Setup> _pump(WidgetTester tester, [_Setup? setup]) async {
@@ -57,6 +65,10 @@ Future<_Setup> _pump(WidgetTester tester, [_Setup? setup]) async {
       GoRoute(
         path: AppRoutes.pin,
         builder: (context, state) => const PinSetupScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.feedback,
+        builder: (context, state) => const FeedbackScreen(),
       ),
     ],
   );
@@ -76,6 +88,8 @@ Future<_Setup> _pump(WidgetTester tester, [_Setup? setup]) async {
           FakeCategoryRepository(DefaultCategories.all),
         ),
         authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
+        usageSharingRepositoryProvider.overrideWithValue(s.sharing),
+        betaRepositoryProvider.overrideWithValue(s.beta),
       ],
       child: MaterialApp.router(routerConfig: router),
     ),
@@ -316,6 +330,66 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text("Couldn't write the file. Try again."), findsOneWidget);
+    });
+  });
+
+  group('beta', () {
+    const sharing = 'Share anonymous usage counts';
+
+    Future<void> showBeta(WidgetTester tester) async {
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(find.text(sharing), 200);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('usage sharing is off until turned on, then reports', (
+      tester,
+    ) async {
+      final setup = await _pump(tester);
+      await showBeta(tester);
+      expect(_isOn(tester, sharing), isFalse);
+
+      await tester.tap(_switch(sharing));
+      await tester.pumpAndSettle();
+
+      expect(_isOn(tester, sharing), isTrue);
+      expect(setup.sharing.sharing, isNotNull);
+      expect(
+        setup.beta.reports.single.installId,
+        setup.sharing.sharing!.installId,
+      );
+
+      await tester.tap(_switch(sharing));
+      await tester.pumpAndSettle();
+      expect(_isOn(tester, sharing), isFalse);
+      expect(setup.sharing.sharing, isNull);
+    });
+
+    testWidgets('a storage failure shows, and can be retried', (tester) async {
+      final setup = _Setup()
+        ..sharing.loadFailure = const BetaFailure(BetaError.storage);
+      await _pump(tester, setup);
+      await showBeta(tester);
+      expect(find.widgetWithText(ListTile, sharing), findsOneWidget);
+      expect(
+        find.text(const BetaFailure(BetaError.storage).message),
+        findsOneWidget,
+      );
+
+      setup.sharing.loadFailure = null;
+      await tester.tap(find.text('Retry'));
+      await tester.pumpAndSettle();
+      expect(_switch(sharing), findsOneWidget);
+    });
+
+    testWidgets('Send feedback opens the form', (tester) async {
+      await _pump(tester);
+      await showBeta(tester);
+
+      await tester.tap(find.text('Send feedback'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(FeedbackScreen), findsOneWidget);
     });
   });
 }

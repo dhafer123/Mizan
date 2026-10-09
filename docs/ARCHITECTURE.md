@@ -233,8 +233,9 @@ receipt ─► OCR (ML Kit) ──┘
 | `sync` | `/sync/push`, `/sync/pull`, applied-op log, conflict policy, history |
 | `groups` | Invite tokens (link / QR, single-use, 7 days), joining, placeholder claiming. Groups and members themselves sync through push (ADR 0009) |
 | `notifications` | FCM pushes (HTTP v1, after commit, off the request thread): "data changed" to members' other phones, "new shared expense", "someone joined", weekly settle-up reminders (ADR 0011) |
+| `beta` | Anonymous feedback and opt-in usage counts (expenses logged per day by input method), never tied to an account; `manage.py beta_report` (ADR 0019) |
 
-- PostgreSQL, with Docker Compose for local development.
+- PostgreSQL, with Docker Compose for local development. Production (the beta) runs the same image with gunicorn on Render (`render.yaml`, ADR 0019).
 - The server **re-validates** domain rules (shares sum to the amount *and* are what the split gives, member belongs to the group). It never trusts the client. Split JSON: ADR 0010.
 - pytest covers the API and every conflict case in §6.
 
@@ -243,6 +244,7 @@ receipt ─► OCR (ML Kit) ──┘
 - Voice, receipts and categorization never leave the phone.
 - App lock with PIN or biometrics (`local_auth`). Tokens are kept in `flutter_secure_storage`.
 - The server stores only what sync needs. No receipt images are uploaded.
+- Beta feedback is anonymous unless the sender adds a contact. Usage counts are opt-in, carry a random install id (not the account), and hold only how many expenses were logged per day and how (ADR 0019).
 - CSV export of all your data, and account deletion that removes your server data.
 
 ## 11. Testing strategy

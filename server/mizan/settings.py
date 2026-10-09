@@ -35,6 +35,12 @@ if not SECRET_KEY:
 
 # 10.0.2.2 is this machine as seen from the Android emulator.
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,10.0.2.2" if DEBUG else "")
+# Render gives each web service a public hostname (render.yaml).
+if env("RENDER_EXTERNAL_HOSTNAME"):
+    ALLOWED_HOSTS.append(env("RENDER_EXTERNAL_HOSTNAME"))
+
+# Behind the host's HTTPS proxy, the app itself speaks plain HTTP.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 INSTALLED_APPS = [
     "django.contrib.contenttypes",
@@ -46,6 +52,7 @@ INSTALLED_APPS = [
     "sync",
     "groups",
     "notifications",
+    "beta",
 ]
 
 # API only: no sessions, CSRF cookies or templates. Auth is JWT.
@@ -100,7 +107,12 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "EXCEPTION_HANDLER": "mizan.errors.api_exception_handler",
     # Password guessing: login and sign-up share one per-IP budget.
-    "DEFAULT_THROTTLE_RATES": {"auth": env("AUTH_THROTTLE_RATE", "20/min")},
+    # Anonymous beta feedback and usage counts: per IP, and a campus Wi-Fi
+    # puts many students behind one IP.
+    "DEFAULT_THROTTLE_RATES": {
+        "auth": env("AUTH_THROTTLE_RATE", "20/min"),
+        "beta": env("BETA_THROTTLE_RATE", "120/hour"),
+    },
 }
 
 SIMPLE_JWT = {

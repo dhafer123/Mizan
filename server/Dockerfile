@@ -7,8 +7,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# The production image (render.yaml) installs only what the server needs;
+# docker-compose.yml builds with requirements-dev.txt for pytest.
+ARG REQUIREMENTS=requirements.txt
 COPY requirements.txt requirements-dev.txt ./
-RUN pip install -r requirements-dev.txt
+RUN pip install -r ${REQUIREMENTS}
 
 COPY . .
 
@@ -17,5 +20,6 @@ USER mizan
 
 EXPOSE 8000
 
-# Development server. A production image (gunicorn, collectstatic) comes with the release task.
-CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"]
+# Production: gunicorn with a fixed pool of threads, on the host's $PORT.
+# docker-compose.yml runs the dev server instead.
+CMD ["sh", "-c", "python manage.py migrate --noinput && exec gunicorn mizan.wsgi --bind 0.0.0.0:${PORT:-8000} --workers ${WEB_CONCURRENCY:-2} --threads 4 --timeout 60 --access-logfile -"]
