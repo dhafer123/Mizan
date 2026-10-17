@@ -2,6 +2,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../app/di/settings_providers.dart';
 import '../../../expenses/presentation/shared/no_retry.dart';
+import '../../../mascot/presentation/penny_lines.dart';
+import '../../../mascot/presentation/penny_providers.dart';
 
 part 'onboarding_controller.g.dart';
 
@@ -17,6 +19,8 @@ class OnboardingController extends _$OnboardingController {
   /// flag fails (then it may show again on the next start).
   Future<void> finish() async {
     state = const AsyncData(false);
+    // Penny winks hello on Home.
+    ref.read(pennyReactionProvider.notifier).react(PennyMoment.setupDone);
     await ref.read(finishOnboardingProvider)();
   }
 }

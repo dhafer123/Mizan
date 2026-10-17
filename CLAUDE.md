@@ -54,7 +54,7 @@ app/lib/
   app/        router, theme, di/
   core/       money/, result/, ids/, clock/
   features/<feature>/{domain/{entities,value_objects,repositories,usecases}, data/{db,repositories,mappers,remote}, presentation/}
-  features:   expenses, budget, groups, sync, quick_input, auth, settings
+  features:   expenses, budget, groups, sync, quick_input, auth, settings, mascot
 server/       accounts/, ledger/, sync/, groups/, notifications/, tests/
 docs/         ARCHITECTURE.md, METRICS.md, decisions/
 ```

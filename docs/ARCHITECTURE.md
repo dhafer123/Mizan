@@ -70,6 +70,7 @@ mizan/
         quick_input/{domain, data, presentation}   # voice, receipt, categorization
         auth/       {domain, data, presentation}
         settings/   {presentation}                 # app lock, export, account
+        mascot/     {domain, presentation}         # Penny: mood from budget/forecast, face, lines (ADR 0023)
     test/                           # mirrors lib/
     integration_test/
   server/                           # Django project

@@ -6,6 +6,9 @@ import '../../../../app/router/app_router.dart';
 import '../../../../app/widgets/load_error.dart';
 import '../../../expenses/presentation/expense_sheet/expense_sheet.dart';
 import '../../../expenses/presentation/shared/failure_message.dart';
+import '../../../mascot/presentation/penny_card.dart';
+import '../../../mascot/presentation/penny_lines.dart';
+import '../../../mascot/presentation/penny_providers.dart';
 import '../../../quick_input/presentation/quick_input_sheet.dart';
 import '../../../sync/presentation/sync_status_button.dart';
 import '../../domain/value_objects/dashboard.dart';
@@ -46,32 +49,60 @@ class HomeScreen extends ConsumerWidget {
             ),
             loading: () => const Center(child: CircularProgressIndicator()),
           ),
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          FloatingActionButton.small(
-            heroTag: 'quick-input',
-            onPressed: () => _quickInput(context),
-            tooltip: 'Say an expense',
-            child: const Icon(Icons.mic_none),
-          ),
-          const SizedBox(height: 12),
-          FloatingActionButton.extended(
-            heroTag: 'add-expense',
-            onPressed: () => showExpenseSheet(context),
-            icon: const Icon(Icons.add),
-            label: const Text('Add expense'),
-          ),
-        ],
+      floatingActionButton: _AddButtons(
+        onQuickInput: () => _quickInput(context, ref),
+        onAdd: () async {
+          final saved = await showExpenseSheet(context);
+          if (saved == true) _pennyReacts(ref);
+        },
       ),
     );
   }
 }
 
-Future<void> _quickInput(BuildContext context) async {
+class _AddButtons extends StatelessWidget {
+  const _AddButtons({required this.onQuickInput, required this.onAdd});
+
+  final VoidCallback onQuickInput;
+  final VoidCallback onAdd;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        FloatingActionButton.small(
+          heroTag: 'quick-input',
+          onPressed: onQuickInput,
+          tooltip: 'Say an expense',
+          child: const Icon(Icons.mic_none),
+        ),
+        const SizedBox(height: 12),
+        FloatingActionButton.extended(
+          heroTag: 'add-expense',
+          onPressed: onAdd,
+          icon: const Icon(Icons.add),
+          label: const Text('Add expense'),
+        ),
+      ],
+    );
+  }
+}
+
+/// Penny cheers when something is logged from Home, louder for the first
+/// expense of the month.
+void _pennyReacts(WidgetRef ref) {
+  final firstOfMonth = ref.read(dashboardProvider).value?.isEmptyMonth ?? false;
+  ref
+      .read(pennyReactionProvider.notifier)
+      .react(firstOfMonth ? PennyMoment.firstOfMonth : PennyMoment.logged);
+}
+
+Future<void> _quickInput(BuildContext context, WidgetRef ref) async {
   final saved = await showQuickInputSheet(context);
   if (saved == null || saved == 0 || !context.mounted) return;
+  _pennyReacts(ref);
   ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
     ..showSnackBar(
@@ -99,6 +130,8 @@ class _DashboardBody extends StatelessWidget {
         140 + MediaQuery.paddingOf(context).bottom,
       ),
       children: [
+        const PennyCard(),
+        const SizedBox(height: 12),
         MoneyLeftCard(dashboard: dashboard),
         const SizedBox(height: 12),
         ForecastCard(
