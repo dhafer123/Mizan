@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/di/groups_providers.dart';
+import '../../../../app/widgets/load_error.dart';
 import '../../../../core/money/money_formatter.dart';
 import '../../../../core/result/result.dart';
 import '../../../expenses/presentation/shared/failure_message.dart';
@@ -11,7 +12,6 @@ import '../../domain/entities/settlement.dart';
 import '../../domain/value_objects/group_ledger.dart';
 import '../../domain/value_objects/transfer.dart';
 import '../shared/group_data_providers.dart';
-import '../shared/load_error.dart';
 import 'record_payment_sheet.dart';
 
 /// The fewest payments that settle the group (`SimplifyDebts`), each with a
@@ -76,10 +76,13 @@ class _SettleUp extends ConsumerWidget {
 
     Widget header(String text) => Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-      child: Text(
-        text,
-        style: theme.textTheme.labelLarge?.copyWith(
-          color: theme.colorScheme.primary,
+      child: Semantics(
+        header: true,
+        child: Text(
+          text,
+          style: theme.textTheme.labelLarge?.copyWith(
+            color: theme.colorScheme.primary,
+          ),
         ),
       ),
     );

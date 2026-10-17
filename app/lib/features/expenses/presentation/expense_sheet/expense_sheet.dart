@@ -195,7 +195,6 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
                 labelText: 'Amount',
                 suffixText: currency.symbol,
                 errorText: _amountError,
-                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 16),
@@ -225,7 +224,6 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
                 decoration: InputDecoration(
                   labelText: 'Date',
                   errorText: _dateError,
-                  border: const OutlineInputBorder(),
                   suffixIcon: const Icon(Icons.calendar_today_outlined),
                 ),
                 child: Text(
@@ -246,7 +244,6 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
               decoration: InputDecoration(
                 labelText: 'Note (optional)',
                 errorText: _noteError,
-                border: const OutlineInputBorder(),
               ),
             ),
             if (_saveError case final error?)

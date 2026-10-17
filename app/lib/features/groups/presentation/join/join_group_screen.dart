@@ -5,13 +5,13 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/di/groups_providers.dart';
 import '../../../../app/di/sync_providers.dart';
 import '../../../../app/router/app_router.dart';
+import '../../../../app/widgets/load_error.dart';
 import '../../../../core/result/result.dart';
 import '../../../auth/presentation/account_provider.dart';
 import '../../../expenses/presentation/shared/failure_message.dart';
 import '../../domain/value_objects/invite_link.dart';
 import '../../domain/value_objects/invite_preview.dart';
 import '../shared/group_data_providers.dart';
-import '../shared/load_error.dart';
 
 /// Join a group with an invite: opened from an invite link (with [token]),
 /// or with a pasted link. Shows where the invite leads before joining.

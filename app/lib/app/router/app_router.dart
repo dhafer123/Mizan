@@ -12,6 +12,8 @@ import '../../features/expenses/presentation/expense_list/expense_list_screen.da
 import '../../features/groups/presentation/group_detail/group_screen.dart';
 import '../../features/groups/presentation/group_list/groups_screen.dart';
 import '../../features/groups/presentation/join/join_group_screen.dart';
+import '../../features/settings/presentation/onboarding/onboarding_controller.dart';
+import '../../features/settings/presentation/onboarding/onboarding_screen.dart';
 import '../../features/settings/presentation/pin/pin_setup_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 
@@ -20,6 +22,7 @@ part 'app_router.g.dart';
 /// Route paths, kept in one place so screens never hard-code strings.
 abstract final class AppRoutes {
   static const home = '/';
+  static const welcome = '/welcome';
   static const expenses = '/expenses';
   static const categories = '/categories';
   static const budget = '/budget';
@@ -41,10 +44,21 @@ abstract final class AppRoutes {
 GoRouter appRouter(Ref ref) {
   final router = GoRouter(
     initialLocation: AppRoutes.home,
+    // A new install opens on onboarding. Only Home redirects, so an invite
+    // link still opens where it points.
+    redirect: (context, state) async {
+      if (state.matchedLocation != AppRoutes.home) return null;
+      final needed = await ref.read(onboardingControllerProvider.future);
+      return needed ? AppRoutes.welcome : null;
+    },
     routes: [
       GoRoute(
         path: AppRoutes.home,
         builder: (context, state) => const HomeScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.welcome,
+        builder: (context, state) => const OnboardingScreen(),
       ),
       GoRoute(
         path: AppRoutes.expenses,

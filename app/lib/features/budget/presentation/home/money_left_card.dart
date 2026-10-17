@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/app_router.dart';
+import '../../../../app/widgets/text_with_action.dart';
 import '../../../../core/money/money_formatter.dart';
 import '../../domain/value_objects/dashboard.dart';
 
@@ -32,13 +33,27 @@ class MoneyLeftCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Money left this month', style: theme.textTheme.labelLarge),
-            const SizedBox(height: 4),
-            Text(
-              _money.format(left),
-              key: const ValueKey('moneyLeft'),
-              style: theme.textTheme.displaySmall?.copyWith(
-                color: left.isNegative ? colors.error : null,
+            // Read as one heading: "Money left this month, 120.000 DT".
+            MergeSemantics(
+              child: Semantics(
+                header: true,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Money left this month',
+                      style: theme.textTheme.labelLarge,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _money.format(left),
+                      key: const ValueKey('moneyLeft'),
+                      style: theme.textTheme.displaySmall?.copyWith(
+                        color: left.isNegative ? colors.error : null,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             Text(
@@ -91,16 +106,12 @@ class MoneyLeftCard extends StatelessWidget {
                 ],
               )
             else if (available.income.isZero)
-              Row(
-                children: [
-                  const Expanded(
-                    child: Text('Add your income to see what you can spend.'),
-                  ),
-                  TextButton(
-                    onPressed: () => context.push(AppRoutes.income),
-                    child: const Text('Add income'),
-                  ),
-                ],
+              TextWithAction(
+                text: 'Add your income to see what you can spend.',
+                action: TextButton(
+                  onPressed: () => context.push(AppRoutes.income),
+                  child: const Text('Add income'),
+                ),
               )
             else
               const Text('No income date scheduled.'),

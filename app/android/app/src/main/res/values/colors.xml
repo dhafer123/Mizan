@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The brand's royal blue (AppTheme's light primary): the tint of
+         notifications shown by the system. -->
+    <color name="brand_blue">#2D4BD8</color>
+    <!-- The page colour of each theme (AppTheme surface), behind the launch
+         screen and the Flutter UI, so opening doesn't flash white. -->
+    <color name="window_background">#F7F8FF</color>
+</resources>

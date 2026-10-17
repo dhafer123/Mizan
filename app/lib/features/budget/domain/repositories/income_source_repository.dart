@@ -8,6 +8,9 @@ abstract interface class IncomeSourceRepository {
   /// particular order.
   Stream<Result<List<IncomeSource>, BudgetFailure>> watchAll();
 
+  /// The live sources, read once. In no particular order.
+  Future<Result<List<IncomeSource>, BudgetFailure>> getAll();
+
   Future<Result<void, BudgetFailure>> add(IncomeSource source);
 
   /// Fails with `notFound` if the source is missing or deleted.

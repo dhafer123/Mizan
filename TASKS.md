@@ -198,8 +198,18 @@ The money and group logic is built and proven first, with no UI, because everyth
 
 - [ ] **6.1 Fix beta feedback**
   Triage into must / should / later, and fix every "must".
-- [ ] **6.2 UX polish**
+- [x] **6.2 UX polish**
   Onboarding (income, budget, optional group), empty states, dark mode, app icon, and accessibility (font scaling, contrast, screen-reader labels).
+  *Note:* Ticked 2026-10-17 once the user's icon art arrived (redrawn in 6.2b step 1, ADR 0021). Decided with the user: onboarding only on a new install (no flag and no expense, income or budget: beta testers who update skip it), the theme as System / Light / Dark in Settings, and the icon as an adaptive-icon structure with placeholder art. `/welcome` is reached by an async router redirect from `/` only (invite links still open). Its steps reuse the income and budget sheets, so the same use cases and outbox. Per-phone prefs (theme, onboarded) are in secure storage, not `shared_preferences`. Income and budget repositories gained `getAll()` (a one-shot read, as in 2.3). `AppColors` theme extension (chart palette, warning) has light and dark sets; contrast is tested. Shared `EmptyState` / `LoadError` / `TextWithAction` in `app/widgets/`. `test/app/accessibility_test.dart`: every main screen, empty and with data, in both themes at 1× and 2× text, against Flutter's contrast / tap-target / label guidelines plus no overflow. It found and fixed Home's chart legend, the forecast and money-left prompts, the budget header and onboarding's buttons at 2×. Headings for screen readers, a "Delete" action on expense rows (swipe-only before), app label "Mizan", and the icon's foreground as the notification icon. See ADR 0020.
+- [ ] **6.2b UI polish + mascot**
+  Give the app the brand from the icon and mascot sheet (navy, royal blue, cyan, soft white, amber) and make it feel alive, in reviewable steps:
+  1. Brand foundation: hand-tuned light and dark colour schemes, a bundled rounded font, the app icon redrawn as adaptive vector layers, theme tests updated.
+  2. Navigation + Home: bottom navigation (Home, Expenses, Groups, Budget), a gradient hero card with animated money left, the forecast as a "runway" bar, category colours used everywhere.
+  3. Mascot head + moods: a code-drawn, animated head (blink, expressions); `MascotMood` computed in the domain from the forecast and budget (tested); on Home, quick input and sync.
+  4. Illustrations: full-body poses in onboarding and empty states.
+  5. Motion pass: number tweens, entrances, haptics, skeleton loaders; everything off with "reduce motion".
+  *Done when:* each step's screens pass `test/app/accessibility_test.dart` in both themes, and the mascot never stands in for words (screen readers and reduced motion get the same information).
+  *Note (step 1, 2026-10-17):* Done. The colour schemes are written by hand: royal blue leads in light, navy and cyan in dark; every text pair is contrast-tested. Manrope is bundled (5 static weights, OFL; no font package). The icon is redrawn as vector layers by `app/tool/icon/make_icon.py` from `docs/brand/icon.png`. Legacy PNGs and a 512 px store icon (`docs/brand/ic_launcher_512.png`) come from the artwork, and the notification icon is the monochrome layer. Fields now use the theme's rounded outline (21 hard-coded square borders removed). The launch screen uses each theme's page colour. Default theme still follows the phone. See ADR 0021.
 - [ ] **6.3 Performance**
   Cold start time, list scrolling with 2,000 expenses, and sync time for 500 ops. Record them in METRICS.md and fix anything slow.
 - [ ] **6.4 Account deletion + privacy note**

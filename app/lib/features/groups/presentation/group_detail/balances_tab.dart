@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/di/groups_providers.dart';
+import '../../../../app/widgets/load_error.dart';
 import '../../../../core/money/money.dart';
 import '../../../../core/money/money_formatter.dart';
 import '../../../auth/presentation/account_provider.dart';
@@ -10,7 +11,6 @@ import '../../domain/entities/group.dart';
 import '../../domain/entities/member.dart';
 import '../../domain/value_objects/group_balances.dart';
 import '../shared/group_data_providers.dart';
-import '../shared/load_error.dart';
 import '../shared/name_sheet.dart';
 import 'invite_sheet.dart';
 

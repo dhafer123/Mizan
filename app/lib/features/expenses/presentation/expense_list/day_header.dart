@@ -17,18 +17,24 @@ class DayHeader extends StatelessWidget {
     );
     // The day is a calendar date; show it as that date, not as an instant.
     final date = DateTime(day.day.year, day.day.month, day.day.day);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              MaterialLocalizations.of(context).formatMediumDate(date),
-              style: style,
-            ),
+    // One heading for screen readers, so they can jump day to day.
+    return MergeSemantics(
+      child: Semantics(
+        header: true,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  MaterialLocalizations.of(context).formatMediumDate(date),
+                  style: style,
+                ),
+              ),
+              Text(const MoneyFormatter().format(day.total), style: style),
+            ],
           ),
-          Text(const MoneyFormatter().format(day.total), style: style),
-        ],
+        ),
       ),
     );
   }

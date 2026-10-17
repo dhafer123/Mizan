@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/di/expenses_providers.dart';
+import '../../../../app/widgets/load_error.dart';
 import '../../../../core/money/money_formatter.dart';
 import '../../../../core/result/result.dart';
 import '../../domain/entities/category.dart';
@@ -23,7 +24,7 @@ class CategoriesScreen extends ConsumerWidget {
           .watch(categoriesProvider)
           .when(
             data: (categories) => _CategoryList(categories: categories),
-            error: (error, _) => _LoadError(
+            error: (error, _) => LoadError(
               message: failureMessage(error),
               onRetry: () => ref.invalidate(categoriesProvider),
             ),
@@ -171,32 +172,6 @@ class _CategoryTile extends StatelessWidget {
             ? null
             : Text('Limit ${const MoneyFormatter().format(limit)} a month'),
         trailing: action,
-      ),
-    );
-  }
-}
-
-class _LoadError extends StatelessWidget {
-  const _LoadError({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, size: 56),
-            const SizedBox(height: 16),
-            Text(message, textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            OutlinedButton(onPressed: onRetry, child: const Text('Try again')),
-          ],
-        ),
       ),
     );
   }

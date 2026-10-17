@@ -100,6 +100,18 @@ void main() {
       final result = await incomes.watchAll().first;
 
       expect(result.failureOrNull?.error, BudgetError.storage);
+      expect(
+        (await incomes.getAll()).failureOrNull?.error,
+        BudgetError.storage,
+      );
+    });
+
+    test('getAll reads the live sources once, like the stream', () async {
+      await incomes.add(sources[0]);
+      await incomes.add(sources[1]);
+      await incomes.delete('s2');
+
+      expect((await incomes.getAll()).valueOrNull, [sources[0]]);
     });
   });
 
@@ -153,6 +165,18 @@ void main() {
       final result = await budgets.watchAll().first;
 
       expect(result.failureOrNull?.error, BudgetError.storage);
+      expect(
+        (await budgets.getAll()).failureOrNull?.error,
+        BudgetError.storage,
+      );
+    });
+
+    test('getAll reads every budget once, like the stream', () async {
+      expect((await budgets.getAll()).valueOrNull, isEmpty);
+      const october = Budget(id: 'budget-2026-10', month: YearMonth(2026, 10));
+      await budgets.save(october);
+
+      expect((await budgets.getAll()).valueOrNull, [october]);
     });
   });
 }

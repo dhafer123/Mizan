@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../app/widgets/load_error.dart';
 import '../../../expenses/presentation/shared/failure_message.dart';
 import '../../domain/entities/group.dart';
 import '../add_expense/add_shared_expense_sheet.dart';
 import '../settle_up/settle_up_tab.dart';
 import '../shared/group_data_providers.dart';
-import '../shared/load_error.dart';
 import 'balances_tab.dart';
 import 'expenses_tab.dart';
 import 'history_tab.dart';

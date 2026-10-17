@@ -5,12 +5,13 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/di/core_providers.dart';
 import '../../../../app/di/groups_providers.dart';
 import '../../../../app/router/app_router.dart';
+import '../../../../app/widgets/empty_state.dart';
+import '../../../../app/widgets/load_error.dart';
 import '../../../../core/result/result.dart';
 import '../../../auth/presentation/account_provider.dart';
 import '../../../expenses/presentation/shared/failure_message.dart';
 import '../../domain/entities/group.dart';
 import '../shared/group_data_providers.dart';
-import '../shared/load_error.dart';
 import '../shared/name_sheet.dart';
 
 /// The groups this account is in. Create one, or join with an invite link.
@@ -79,40 +80,24 @@ class _Empty extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final signedIn = ref.watch(accountProvider).value != null;
-    final theme = Theme.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.groups_outlined, size: 56),
-            const SizedBox(height: 16),
-            Text('No groups yet', style: theme.textTheme.titleMedium),
-            const SizedBox(height: 8),
-            Text(
-              signedIn
-                  ? 'Share rent, groceries or a trip. Create a group, or '
-                        'join one with an invite link.'
-                  : 'Groups sync through your account. Sign in to create or '
-                        'join one.',
-              textAlign: TextAlign.center,
+    return EmptyState(
+      icon: Icons.groups_outlined,
+      title: 'No groups yet',
+      message: signedIn
+          ? 'Share rent, groceries or a trip. Create a group, or join one '
+                'with an invite link.'
+          : 'Groups sync through your account. Sign in to create or join '
+                'one.',
+      action: signedIn
+          ? OutlinedButton.icon(
+              onPressed: () => context.push(AppRoutes.joinGroup),
+              icon: const Icon(Icons.link),
+              label: const Text('Join with a link'),
+            )
+          : FilledButton(
+              onPressed: () => context.push(AppRoutes.login),
+              child: const Text('Sign in'),
             ),
-            const SizedBox(height: 16),
-            if (signedIn)
-              OutlinedButton.icon(
-                onPressed: () => context.push(AppRoutes.joinGroup),
-                icon: const Icon(Icons.link),
-                label: const Text('Join with a link'),
-              )
-            else
-              FilledButton(
-                onPressed: () => context.push(AppRoutes.login),
-                child: const Text('Sign in'),
-              ),
-          ],
-        ),
-      ),
     );
   }
 }

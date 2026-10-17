@@ -1,3 +1,4 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -178,6 +179,36 @@ void main() {
       );
       expect(find.text('Next income in 9 days: Grant'), findsOneWidget);
       expect(find.textContaining('Over budget'), findsNothing);
+    });
+
+    testWidgets('at large text the legend goes under the chart', (
+      tester,
+    ) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 1.5;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await pumpNormal(tester);
+
+      // Amount and share under the name instead of beside it.
+      expect(find.text('330.000 DT · 64%'), findsOneWidget);
+      final chart = tester.getRect(find.byType(PieChart));
+      final rent = tester.getRect(find.text('330.000 DT · 64%'));
+      expect(rent.top, greaterThan(chart.bottom));
+    });
+
+    testWidgets('screen readers hear money left as one heading', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await pumpNormal(tester);
+
+      expect(
+        tester.getSemantics(find.byKey(const ValueKey('moneyLeft'))),
+        containsSemantics(
+          label: 'Money left this month\n85.000 DT',
+          isHeader: true,
+        ),
+      );
+      semantics.dispose();
     });
 
     testWidgets('the top four categories, then the rest', (tester) async {

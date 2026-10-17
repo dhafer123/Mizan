@@ -47,3 +47,19 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  # Manrope (SIL Open Font License, assets/fonts/OFL.txt), static weights
+  # cut from the Google Fonts variable font. Bundled, so no font package and
+  # no download at runtime.
+  fonts:
+    - family: Manrope
+      fonts:
+        - asset: assets/fonts/Manrope-Regular.ttf
+        - asset: assets/fonts/Manrope-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Manrope-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Manrope-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Manrope-ExtraBold.ttf
+          weight: 800

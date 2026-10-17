@@ -25,6 +25,17 @@ class IncomeSourceRepositoryImpl implements IncomeSourceRepository {
       .transform(storageErrorsAsFailures(_storage));
 
   @override
+  Future<Result<List<IncomeSource>, BudgetFailure>> getAll() async {
+    try {
+      return Ok(
+        (await _dao.getLive()).map(IncomeSourceMapper.toDomain).toList(),
+      );
+    } on Object {
+      return const Err(_storage);
+    }
+  }
+
+  @override
   Future<Result<void, BudgetFailure>> add(IncomeSource source) =>
       _guard(() => _dao.insertSource(IncomeSourceMapper.toRow(source)));
 

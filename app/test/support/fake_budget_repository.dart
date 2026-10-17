@@ -13,7 +13,7 @@ class FakeBudgetRepository implements BudgetRepository {
   final Map<String, Budget> _byId;
   final _changes = StreamController<void>.broadcast();
 
-  /// When set, [watchAll] emits this instead.
+  /// When set, [watchAll] emits this instead, and [getAll] returns it.
   BudgetFailure? watchFailure;
 
   /// When set, every write fails with this.
@@ -28,6 +28,9 @@ class FakeBudgetRepository implements BudgetRepository {
       yield _current();
     }
   }
+
+  @override
+  Future<Result<List<Budget>, BudgetFailure>> getAll() async => _current();
 
   Result<List<Budget>, BudgetFailure> _current() => switch (watchFailure) {
     final failure? => Err(failure),

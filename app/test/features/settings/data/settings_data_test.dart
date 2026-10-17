@@ -4,9 +4,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mizan/core/result/result.dart';
 import 'package:mizan/features/settings/data/export/platform_file_exporter.dart';
 import 'package:mizan/features/settings/data/lock/secure_lock_settings_repository.dart';
+import 'package:mizan/features/settings/data/preferences/secure_device_preferences_repository.dart';
 import 'package:mizan/features/settings/domain/entities/lock_settings.dart';
 import 'package:mizan/features/settings/domain/value_objects/settings_error.dart';
 import 'package:mizan/features/settings/domain/value_objects/settings_failure.dart';
+import 'package:mizan/features/settings/domain/value_objects/theme_choice.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -38,6 +40,49 @@ void main() {
         await const FlutterSecureStorage().readAll(),
         isEmpty,
         reason: 'nothing left behind',
+      );
+    });
+  });
+
+  group('SecureDevicePreferencesRepository', () {
+    const repository = SecureDevicePreferencesRepository(
+      FlutterSecureStorage(),
+    );
+
+    test('defaults: follow the phone, not onboarded', () async {
+      FlutterSecureStorage.setMockInitialValues({});
+
+      expect(
+        await repository.loadThemeChoice(),
+        const Ok<ThemeChoice, SettingsFailure>(ThemeChoice.system),
+      );
+      expect(
+        await repository.loadOnboarded(),
+        const Ok<bool, SettingsFailure>(false),
+      );
+    });
+
+    test('saves and loads both', () async {
+      FlutterSecureStorage.setMockInitialValues({});
+
+      await repository.saveThemeChoice(ThemeChoice.dark);
+      await repository.saveOnboarded();
+
+      expect(
+        (await repository.loadThemeChoice()).valueOrNull,
+        ThemeChoice.dark,
+      );
+      expect((await repository.loadOnboarded()).valueOrNull, isTrue);
+    });
+
+    test('an unknown stored theme falls back to the system one', () async {
+      FlutterSecureStorage.setMockInitialValues({
+        SecureDevicePreferencesRepository.themeKey: 'sepia',
+      });
+
+      expect(
+        (await repository.loadThemeChoice()).valueOrNull,
+        ThemeChoice.system,
       );
     });
   });

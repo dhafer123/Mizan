@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 
 import '../../../../core/money/money_formatter.dart';
 import '../../domain/entities/category.dart';
 import '../../domain/entities/expense.dart';
 import '../shared/category_icon.dart';
 
-/// One expense; swipe it towards the start to delete.
+/// One expense; swipe it towards the start to delete. Screen readers get
+/// the same delete as an action, since they can't swipe.
 class ExpenseTile extends StatelessWidget {
   const ExpenseTile({
     required this.expense,
@@ -21,6 +23,8 @@ class ExpenseTile extends StatelessWidget {
   final Category? category;
   final VoidCallback onTap;
   final VoidCallback onDismissed;
+
+  static const deleteAction = CustomSemanticsAction(label: 'Delete');
 
   @override
   Widget build(BuildContext context) {
@@ -38,18 +42,21 @@ class ExpenseTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 24),
         child: Icon(Icons.delete_outline, color: colors.onErrorContainer),
       ),
-      child: ListTile(
-        onTap: onTap,
-        leading: CircleAvatar(
-          child: ExcludeSemantics(
-            child: Icon(categoryIcon(category?.icon ?? '')),
+      child: Semantics(
+        customSemanticsActions: {deleteAction: onDismissed},
+        child: ListTile(
+          onTap: onTap,
+          leading: CircleAvatar(
+            child: ExcludeSemantics(
+              child: Icon(categoryIcon(category?.icon ?? '')),
+            ),
           ),
-        ),
-        title: Text(note ?? categoryName),
-        subtitle: note == null ? null : Text(categoryName),
-        trailing: Text(
-          const MoneyFormatter().format(expense.amount),
-          style: Theme.of(context).textTheme.titleSmall,
+          title: Text(note ?? categoryName),
+          subtitle: note == null ? null : Text(categoryName),
+          trailing: Text(
+            const MoneyFormatter().format(expense.amount),
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
         ),
       ),
     );

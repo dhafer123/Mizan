@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Adaptive icon background: the artwork's navy, deepening from violet at
+     the top right to cyan at the bottom left, with two soft waves. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path android:pathData="M0,0h108v108h-108z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="108" android:startY="0"
+                android:endX="0" android:endY="108"
+                android:startColor="#4F46E5" android:centerColor="#14206B"
+                android:endColor="#0891B2" />
+        </aapt:attr>
+    </path>
+    <path
+        android:fillColor="#33000A3D"
+        android:pathData="M0,30C24,22 48,40 72,30S102,14 108,20V0H0Z" />
+    <path
+        android:fillColor="#40071660"
+        android:pathData="M0,78C20,70 36,90 60,86S96,64 108,70V108H0Z" />
+</vector>

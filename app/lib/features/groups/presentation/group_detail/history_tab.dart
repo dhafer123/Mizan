@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../app/widgets/empty_state.dart';
+import '../../../../app/widgets/load_error.dart';
 import '../../../auth/presentation/account_provider.dart';
 import '../../../expenses/domain/entities/category.dart';
 import '../../../expenses/presentation/shared/categories_provider.dart';
@@ -8,7 +10,6 @@ import '../../../expenses/presentation/shared/failure_message.dart';
 import '../../domain/entities/group.dart';
 import '../../domain/value_objects/change_kind.dart';
 import '../shared/group_data_providers.dart';
-import '../shared/load_error.dart';
 import 'history_text.dart';
 
 /// Who changed what ("Ali changed amount 120.000 DT → 150.000 DT"), newest
@@ -38,14 +39,10 @@ class HistoryTab extends ConsumerWidget {
         .watch(groupHistoryProvider(group.id))
         .when(
           data: (entries) => entries.isEmpty
-              ? const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(24),
-                    child: Text(
-                      'No changes yet. Changes show up here once they sync.',
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
+              ? const EmptyState(
+                  icon: Icons.history,
+                  title: 'No changes yet',
+                  message: 'Changes show up here once they sync.',
                 )
               : ListView(
                   padding: EdgeInsets.only(

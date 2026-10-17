@@ -21,7 +21,11 @@ class LocalNotifications {
     try {
       await _plugin.initialize(
         settings: const InitializationSettings(
-          android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+          // Status bar icons must be one colour on transparent: the
+          // launcher icon's monochrome layer.
+          android: AndroidInitializationSettings(
+            '@drawable/ic_launcher_monochrome',
+          ),
           iOS: DarwinInitializationSettings(),
         ),
         onDidReceiveNotificationResponse: (response) =>

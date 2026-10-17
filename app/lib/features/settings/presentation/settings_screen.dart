@@ -4,16 +4,18 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/di/settings_providers.dart';
 import '../../../app/router/app_router.dart';
+import '../../../app/widgets/load_error.dart';
 import '../../../core/result/result.dart';
 import '../../auth/presentation/account_section.dart';
 import '../../beta/presentation/beta_settings_section.dart';
 import '../../expenses/presentation/shared/failure_message.dart';
 import '../../quick_input/presentation/assistant_settings_section.dart';
 import '../domain/value_objects/lock_status.dart';
+import 'appearance/appearance_section.dart';
 import 'lock/app_lock_controller.dart';
 import 'lock/lock_status_provider.dart';
 
-/// The account (sign in / log out), the app lock (PIN, biometrics),
+/// The account (sign in / log out), the theme, the app lock (PIN, biometrics),
 /// exporting expenses, the quick input assistant, and the beta (feedback,
 /// usage counts).
 class SettingsScreen extends ConsumerWidget {
@@ -28,7 +30,7 @@ class SettingsScreen extends ConsumerWidget {
           .when(
             skipLoadingOnReload: true,
             data: (status) => _SettingsList(status: status),
-            error: (error, _) => _LoadError(
+            error: (error, _) => LoadError(
               message: failureMessage(error),
               onRetry: () => ref.invalidate(lockStatusProvider),
             ),
@@ -136,10 +138,13 @@ class _SettingsListState extends ConsumerState<_SettingsList> {
     final theme = Theme.of(context);
     Widget header(String text) => Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-      child: Text(
-        text,
-        style: theme.textTheme.labelLarge?.copyWith(
-          color: theme.colorScheme.primary,
+      child: Semantics(
+        header: true,
+        child: Text(
+          text,
+          style: theme.textTheme.labelLarge?.copyWith(
+            color: theme.colorScheme.primary,
+          ),
         ),
       ),
     );
@@ -151,6 +156,8 @@ class _SettingsListState extends ConsumerState<_SettingsList> {
       children: [
         header('Account'),
         const AccountSection(),
+        header('Appearance'),
+        const AppearanceSection(),
         header('Security'),
         SwitchListTile(
           value: status.enabled,
@@ -201,32 +208,6 @@ class _SettingsListState extends ConsumerState<_SettingsList> {
         header('Beta'),
         const BetaSettingsSection(),
       ],
-    );
-  }
-}
-
-class _LoadError extends StatelessWidget {
-  const _LoadError({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, size: 56),
-            const SizedBox(height: 16),
-            Text(message, textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            OutlinedButton(onPressed: onRetry, child: const Text('Try again')),
-          ],
-        ),
-      ),
     );
   }
 }

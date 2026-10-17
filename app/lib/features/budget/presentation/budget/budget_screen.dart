@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/di/core_providers.dart';
 import '../../../../app/router/app_router.dart';
+import '../../../../app/theme/app_colors.dart';
+import '../../../../app/widgets/load_error.dart';
 import '../../../../core/clock/calendar_day.dart';
 import '../../../../core/money/money.dart';
 import '../../../../core/money/money_formatter.dart';
@@ -50,7 +52,7 @@ class BudgetScreen extends ConsumerWidget {
                   // Keep showing the last numbers while a change recomputes.
                   skipLoadingOnReload: true,
                   data: (data) => _BudgetBody(data: data),
-                  error: (error, _) => _LoadError(
+                  error: (error, _) => LoadError(
                     message: failureMessage(error),
                     onRetry: () => retryBudgetScreen(ref, month),
                   ),
@@ -217,14 +219,11 @@ class _TotalBudgetCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            // The button goes under the title when large text leaves no room.
+            OverflowBar(
+              alignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(
-                  child: Text(
-                    'Monthly budget',
-                    style: theme.textTheme.labelLarge,
-                  ),
-                ),
+                Text('Monthly budget', style: theme.textTheme.labelLarge),
                 TextButton(
                   onPressed: () => showBudgetLimitSheet(
                     context,
@@ -307,7 +306,7 @@ class _UsedBar extends StatelessWidget {
       color: over
           ? colors.error
           : percent >= 80
-          ? Colors.amber.shade700
+          ? AppColors.of(context).warning
           : null,
       minHeight: 6,
       borderRadius: BorderRadius.circular(3),
@@ -330,31 +329,5 @@ class _LeftText extends StatelessWidget {
             style: TextStyle(color: theme.colorScheme.error),
           )
         : Text('${_money.format(left)} left');
-  }
-}
-
-class _LoadError extends StatelessWidget {
-  const _LoadError({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, size: 56),
-            const SizedBox(height: 16),
-            Text(message, textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            OutlinedButton(onPressed: onRetry, child: const Text('Try again')),
-          ],
-        ),
-      ),
-    );
   }
 }

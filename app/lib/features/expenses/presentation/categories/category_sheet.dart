@@ -180,7 +180,6 @@ class _CategorySheetState extends ConsumerState<CategorySheet> {
               decoration: InputDecoration(
                 labelText: 'Name',
                 errorText: _nameError,
-                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 8),
@@ -227,7 +226,6 @@ class _CategorySheetState extends ConsumerState<CategorySheet> {
                 helperText: 'Leave empty for no limit.',
                 suffixText: currency.symbol,
                 errorText: _limitError,
-                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 16),

@@ -141,7 +141,6 @@ class _BudgetLimitSheetState extends ConsumerState<BudgetLimitSheet> {
                 labelText: 'Spend at most',
                 suffixText: _currency.symbol,
                 errorText: _error,
-                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 16),

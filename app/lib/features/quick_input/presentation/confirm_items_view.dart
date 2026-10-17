@@ -289,7 +289,6 @@ class _ConfirmItemsViewState extends ConsumerState<ConfirmItemsView> {
             child: InputDecorator(
               decoration: const InputDecoration(
                 labelText: 'Date',
-                border: OutlineInputBorder(),
                 suffixIcon: Icon(Icons.calendar_today_outlined),
               ),
               child: Text(
@@ -396,7 +395,6 @@ class _ItemCard extends StatelessWidget {
                       isDense: true,
                       errorText: row.error,
                       errorMaxLines: 3,
-                      border: const OutlineInputBorder(),
                     ),
                   ),
                 ),
@@ -410,7 +408,6 @@ class _ItemCard extends StatelessWidget {
                       labelText: 'What',
                       isDense: true,
                       counterText: '',
-                      border: OutlineInputBorder(),
                     ),
                   ),
                 ),
@@ -433,7 +430,6 @@ class _ItemCard extends StatelessWidget {
                   decoration: InputDecoration(
                     labelText: 'Category',
                     isDense: true,
-                    border: const OutlineInputBorder(),
                     helperText: switch (row.suggestedBy) {
                       CategorySource.memory => 'From your past choices',
                       CategorySource.llm => 'Suggested by the assistant',

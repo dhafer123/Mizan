@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mizan/app/di/core_providers.dart';
@@ -10,6 +11,7 @@ import 'package:mizan/features/expenses/domain/entities/expense.dart';
 import 'package:mizan/features/expenses/domain/value_objects/expense_error.dart';
 import 'package:mizan/features/expenses/domain/value_objects/expense_failure.dart';
 import 'package:mizan/features/expenses/presentation/expense_list/expense_list_screen.dart';
+import 'package:mizan/features/expenses/presentation/expense_list/expense_tile.dart';
 
 import '../../../../support/fake_category_repository.dart';
 import '../../../../support/fake_expense_repository.dart';
@@ -160,6 +162,36 @@ void main() {
       expect(repository.deleted, ['e2']);
       expect(find.text('coffee'), findsNothing);
       expect(find.text('Expense deleted'), findsNothing);
+    });
+
+    testWidgets('screen readers delete with an action instead, with undo', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      final repository = await _pump(tester);
+      await tester.pumpAndSettle();
+
+      final tile = tester.getSemantics(find.widgetWithText(ListTile, 'coffee'));
+      expect(
+        tile,
+        containsSemantics(customActions: [ExpenseTile.deleteAction]),
+      );
+      tester.semantics.customAction(
+        find.semantics.byPredicate(
+          (node) =>
+              node.label.contains('coffee') &&
+              node.getSemanticsData().hasAction(SemanticsAction.customAction),
+        ),
+        ExpenseTile.deleteAction,
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('coffee'), findsNothing);
+      expect(find.text('Expense deleted'), findsOneWidget);
+
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
+      expect(repository.deleted, ['e2']);
+      semantics.dispose();
     });
 
     testWidgets('the last expense of a day takes its header with it', (

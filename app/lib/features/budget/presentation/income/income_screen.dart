@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../app/widgets/empty_state.dart';
+import '../../../../app/widgets/load_error.dart';
 import '../../../../core/money/money_formatter.dart';
 import '../../../expenses/presentation/shared/failure_message.dart';
 import '../../domain/entities/income_source.dart';
@@ -34,7 +36,7 @@ class IncomeScreen extends ConsumerWidget {
                         ),
                     ],
                   ),
-            error: (error, _) => _LoadError(
+            error: (error, _) => LoadError(
               message: failureMessage(error),
               onRetry: () => ref.invalidate(incomeSourcesProvider),
             ),
@@ -87,53 +89,11 @@ class _NoIncome extends StatelessWidget {
   const _NoIncome();
 
   @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.payments_outlined, size: 56),
-            const SizedBox(height: 16),
-            Text('No income yet', style: textTheme.titleMedium),
-            const SizedBox(height: 8),
-            Text(
-              'Add your grant, job or family support to see what you can '
-              'spend each month.',
-              style: textTheme.bodyMedium,
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _LoadError extends StatelessWidget {
-  const _LoadError({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, size: 56),
-            const SizedBox(height: 16),
-            Text(message, textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            OutlinedButton(onPressed: onRetry, child: const Text('Try again')),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => const EmptyState(
+    icon: Icons.payments_outlined,
+    title: 'No income yet',
+    message:
+        'Add your grant, job or family support to see what you can spend '
+        'each month.',
+  );
 }

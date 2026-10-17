@@ -21,8 +21,13 @@ class IncomeSourcesDao extends DatabaseAccessor<AppDatabase>
       (select(incomeSources)..where((s) => s.id.equals(id))).getSingleOrNull();
 
   /// Live (not deleted) sources, re-emitted on every change.
-  Stream<List<IncomeSourceRow>> watchLive() =>
-      (select(incomeSources)..where((s) => s.deleted.not())).watch();
+  Stream<List<IncomeSourceRow>> watchLive() => _liveRows().watch();
+
+  /// [watchLive], read once.
+  Future<List<IncomeSourceRow>> getLive() => _liveRows().get();
+
+  SimpleSelectStatement<$IncomeSourcesTable, IncomeSourceRow> _liveRows() =>
+      select(incomeSources)..where((s) => s.deleted.not());
 
   Future<void> insertSource(IncomeSourceRow row) =>
       attachedDatabase.outboxDao.recordWrite(

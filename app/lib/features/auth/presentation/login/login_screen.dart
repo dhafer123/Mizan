@@ -92,7 +92,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 decoration: InputDecoration(
                   labelText: 'Email',
                   errorText: _errors[AuthField.email],
-                  border: const OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 16),

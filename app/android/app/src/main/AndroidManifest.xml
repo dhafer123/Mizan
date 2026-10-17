@@ -6,7 +6,7 @@
     <!-- Quick input listens with the phone's speech recognizer (speech_to_text). -->
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <application
-        android:label="mizan"
+        android:label="Mizan"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
@@ -38,6 +38,14 @@
                 <data android:scheme="mizan" android:host="mizan.app"/>
             </intent-filter>
         </activity>
+        <!-- Pushes shown by the system while the app is closed: the one-colour
+             icon in the status bar, tinted the brand's blue. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_launcher_monochrome" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/brand_blue" />
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

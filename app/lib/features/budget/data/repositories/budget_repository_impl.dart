@@ -29,6 +29,15 @@ class BudgetRepositoryImpl implements BudgetRepository {
       .transform(storageErrorsAsFailures(_storage));
 
   @override
+  Future<Result<List<Budget>, BudgetFailure>> getAll() async {
+    try {
+      return Ok((await _dao.getLive()).map(BudgetMapper.toDomain).toList());
+    } on Object {
+      return const Err(_storage);
+    }
+  }
+
+  @override
   Future<Result<void, BudgetFailure>> save(Budget budget) async {
     try {
       await _dao.saveBudget(BudgetMapper.toRow(budget, currency: _currency));

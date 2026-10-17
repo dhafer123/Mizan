@@ -3,21 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/app_router.dart';
+import '../../../../app/theme/app_colors.dart';
+import '../../../../app/widgets/large_text.dart';
 import '../../../../core/money/money.dart';
 import '../../../../core/money/money_formatter.dart';
 import '../../../expenses/presentation/shared/category_icon.dart';
 import '../../domain/value_objects/dashboard.dart';
 
 const _money = MoneyFormatter();
-
-/// Slice colours, in rank order. "Other" is always grey.
-const _palette = [
-  Color(0xFF3F51B5), // indigo
-  Color(0xFF009688), // teal
-  Color(0xFFFFA000), // amber
-  Color(0xFFE91E63), // pink
-];
-const _otherColor = Color(0xFF9E9E9E);
 
 /// Where the month's money went: a donut of the top categories and the rest,
 /// with a legend. Tap through to the budget screen.
@@ -29,6 +22,8 @@ class TopCategoriesCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // Slice colours in rank order; "other" is always grey.
+    final palette = AppColors.of(context);
     final top = dashboard.topCategories;
     final other = dashboard.otherSpent;
 
@@ -38,7 +33,7 @@ class TopCategoriesCard extends StatelessWidget {
           name: line.category?.name ?? 'Uncategorised',
           icon: categoryIcon(line.category?.icon ?? ''),
           spent: line.spent,
-          color: _palette[i % _palette.length],
+          color: palette.chart[i % palette.chart.length],
           overLimit: line.isOver,
         ),
       if (other.isPositive)
@@ -46,9 +41,19 @@ class TopCategoriesCard extends StatelessWidget {
           name: 'Other categories',
           icon: Icons.more_horiz,
           spent: other,
-          color: _otherColor,
+          color: palette.chartOther,
         ),
     ];
+
+    final legend = Column(
+      children: [
+        for (final slice in slices)
+          _LegendRow(
+            slice: slice,
+            percent: dashboard.sharePercent(slice.spent),
+          ),
+      ],
+    );
 
     return Card(
       margin: EdgeInsets.zero,
@@ -60,50 +65,68 @@ class TopCategoriesCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Top categories', style: theme.textTheme.titleMedium),
+              Semantics(
+                header: true,
+                child: Text(
+                  'Top categories',
+                  style: theme.textTheme.titleMedium,
+                ),
+              ),
               const SizedBox(height: 12),
               if (dashboard.isEmptyMonth)
                 const _NoSpending()
+              else if (context.hasLargeText)
+                // No room beside the chart at this size: legend below it.
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Center(child: _Donut(slices: slices)),
+                    const SizedBox(height: 12),
+                    legend,
+                  ],
+                )
               else
                 Row(
                   children: [
-                    SizedBox.square(
-                      dimension: 120,
-                      child: ExcludeSemantics(
-                        child: PieChart(
-                          PieChartData(
-                            sections: [
-                              for (final slice in slices)
-                                PieChartSectionData(
-                                  value: slice.spent.minorUnits.toDouble(),
-                                  color: slice.color,
-                                  radius: 22,
-                                  showTitle: false,
-                                ),
-                            ],
-                            centerSpaceRadius: 34,
-                            sectionsSpace: 2,
-                            startDegreeOffset: -90,
-                            pieTouchData: PieTouchData(enabled: false),
-                          ),
-                        ),
-                      ),
-                    ),
+                    _Donut(slices: slices),
                     const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        children: [
-                          for (final slice in slices)
-                            _LegendRow(
-                              slice: slice,
-                              percent: dashboard.sharePercent(slice.spent),
-                            ),
-                        ],
-                      ),
-                    ),
+                    Expanded(child: legend),
                   ],
                 ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Donut extends StatelessWidget {
+  const _Donut({required this.slices});
+
+  final List<_Slice> slices;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox.square(
+      dimension: 120,
+      // The legend reads out the same numbers.
+      child: ExcludeSemantics(
+        child: PieChart(
+          PieChartData(
+            sections: [
+              for (final slice in slices)
+                PieChartSectionData(
+                  value: slice.spent.minorUnits.toDouble(),
+                  color: slice.color,
+                  radius: 22,
+                  showTitle: false,
+                ),
+            ],
+            centerSpaceRadius: 34,
+            sectionsSpace: 2,
+            startDegreeOffset: -90,
+            pieTouchData: PieTouchData(enabled: false),
           ),
         ),
       ),
@@ -136,6 +159,8 @@ class _LegendRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // At large text the amount goes under the name, or it would crowd it out.
+    final stacked = context.hasLargeText;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -156,6 +181,7 @@ class _LegendRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(slice.name, overflow: TextOverflow.ellipsis),
+                if (stacked) Text('${_money.format(slice.spent)} · $percent%'),
                 if (slice.overLimit)
                   Text(
                     'Over its limit',
@@ -166,13 +192,17 @@ class _LegendRow extends StatelessWidget {
               ],
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(_money.format(slice.spent)),
-              Text('$percent%', style: theme.textTheme.bodySmall),
-            ],
-          ),
+          if (!stacked)
+            // Shrinks (and wraps) before it would overflow a long name.
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(_money.format(slice.spent), textAlign: TextAlign.end),
+                  Text('$percent%', style: theme.textTheme.bodySmall),
+                ],
+              ),
+            ),
         ],
       ),
     );

@@ -8,6 +8,9 @@ abstract interface class BudgetRepository {
   /// no particular order.
   Stream<Result<List<Budget>, BudgetFailure>> watchAll();
 
+  /// Every budget ever set, read once. In no particular order.
+  Future<Result<List<Budget>, BudgetFailure>> getAll();
+
   /// Stores [budget] as its month's budget, replacing any set before.
   Future<Result<void, BudgetFailure>> save(Budget budget);
 }

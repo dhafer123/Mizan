@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/app_router.dart';
+import '../../../../app/widgets/text_with_action.dart';
 import '../../../../core/money/money.dart';
 import '../../../../core/money/money_formatter.dart';
 import '../../../expenses/presentation/shared/failure_message.dart';
@@ -33,7 +34,10 @@ class ForecastCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Forecast', style: theme.textTheme.labelLarge),
+            Semantics(
+              header: true,
+              child: Text('Forecast', style: theme.textTheme.labelLarge),
+            ),
             const SizedBox(height: 8),
             forecast.when(
               skipLoadingOnReload: true,
@@ -43,14 +47,12 @@ class ForecastCard extends ConsumerWidget {
                   daysOfData: daysOfData,
                 ),
               },
-              error: (error, _) => Row(
-                children: [
-                  Expanded(child: Text(failureMessage(error))),
-                  TextButton(
-                    onPressed: () => retryForecast(ref),
-                    child: const Text('Try again'),
-                  ),
-                ],
+              error: (error, _) => TextWithAction(
+                text: failureMessage(error),
+                action: TextButton(
+                  onPressed: () => retryForecast(ref),
+                  child: const Text('Try again'),
+                ),
               ),
               loading: () => const Padding(
                 padding: EdgeInsets.symmetric(vertical: 8),
@@ -146,21 +148,16 @@ class _NeedsData extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final left = ForecastRunOut.coldStartDays - daysOfData;
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            'Keep logging: the forecast starts after '
-            '${ForecastRunOut.coldStartDays} days of spending '
-            '($left to go). Or set a monthly budget to see one now.',
-            key: const ValueKey('forecastNeedsData'),
-          ),
-        ),
-        TextButton(
-          onPressed: () => context.push(AppRoutes.budget),
-          child: const Text('Set budget'),
-        ),
-      ],
+    return TextWithAction(
+      key: const ValueKey('forecastNeedsData'),
+      text:
+          'Keep logging: the forecast starts after '
+          '${ForecastRunOut.coldStartDays} days of spending '
+          '($left to go). Or set a monthly budget to see one now.',
+      action: TextButton(
+        onPressed: () => context.push(AppRoutes.budget),
+        child: const Text('Set budget'),
+      ),
     );
   }
 }

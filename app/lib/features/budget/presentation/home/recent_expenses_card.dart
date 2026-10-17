@@ -39,9 +39,12 @@ class RecentExpensesCard extends ConsumerWidget {
             child: Row(
               children: [
                 Expanded(
-                  child: Text(
-                    'Recent expenses',
-                    style: theme.textTheme.titleMedium,
+                  child: Semantics(
+                    header: true,
+                    child: Text(
+                      'Recent expenses',
+                      style: theme.textTheme.titleMedium,
+                    ),
                   ),
                 ),
                 TextButton(

@@ -12,6 +12,7 @@ import 'package:mizan/features/budget/presentation/home/home_screen.dart';
 
 import '../support/fake_auth_repository.dart';
 import '../support/fake_biometric_authenticator.dart';
+import '../support/fake_device_preferences_repository.dart';
 import '../support/fake_lock_settings_repository.dart';
 import '../support/fake_push_messaging.dart';
 import '../support/fake_sync_repository.dart';
@@ -25,6 +26,9 @@ void main() {
         overrides: [
           clockProvider.overrideWithValue(FakeClock(testNow)),
           appDatabaseProvider.overrideWithValue(db),
+          devicePreferencesRepositoryProvider.overrideWithValue(
+            FakeDevicePreferencesRepository(onboarded: true),
+          ),
           lockSettingsRepositoryProvider.overrideWithValue(
             FakeLockSettingsRepository(),
           ),

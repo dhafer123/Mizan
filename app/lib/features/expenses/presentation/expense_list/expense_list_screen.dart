@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/app_router.dart';
+import '../../../../app/widgets/empty_state.dart';
+import '../../../../app/widgets/load_error.dart';
 import '../../../../core/result/result.dart';
 import '../../domain/entities/category.dart';
 import '../../domain/entities/expense.dart';
@@ -56,7 +58,7 @@ class ExpenseListScreen extends ConsumerWidget {
                     ? const _EmptyMonth()
                     : _DayList(days: visible, categories: categories);
               },
-              error: (error, _) => _LoadError(
+              error: (error, _) => LoadError(
                 message: failureMessage(error),
                 onRetry: () => ref.invalidate(monthExpensesProvider(month)),
               ),
@@ -138,52 +140,9 @@ class _EmptyMonth extends StatelessWidget {
   const _EmptyMonth();
 
   @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.receipt_long_outlined, size: 56),
-            const SizedBox(height: 16),
-            Text('No expenses this month', style: textTheme.titleMedium),
-            const SizedBox(height: 8),
-            Text(
-              'Tap Add to record what you spend.',
-              style: textTheme.bodyMedium,
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _LoadError extends StatelessWidget {
-  const _LoadError({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, size: 56),
-            const SizedBox(height: 16),
-            Text(message, textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            OutlinedButton(onPressed: onRetry, child: const Text('Try again')),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => const EmptyState(
+    icon: Icons.receipt_long_outlined,
+    title: 'No expenses this month',
+    message: 'Tap Add to record what you spend.',
+  );
 }

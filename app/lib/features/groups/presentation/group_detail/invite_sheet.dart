@@ -3,12 +3,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import '../../../../app/widgets/load_error.dart';
 import '../../../expenses/presentation/shared/failure_message.dart';
 import '../../domain/entities/group.dart';
 import '../../domain/entities/member.dart';
 import '../../domain/value_objects/group_invite.dart';
 import '../shared/group_data_providers.dart';
-import '../shared/load_error.dart';
 
 /// Makes an invite to [group] and shows it as a QR code and a link. With
 /// [member] (a placeholder), whoever joins becomes that member.

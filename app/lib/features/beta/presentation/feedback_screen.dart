@@ -89,7 +89,6 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
             decoration: const InputDecoration(
               labelText: 'Your feedback',
               alignLabelWithHint: true,
-              border: OutlineInputBorder(),
             ),
           ),
           const SizedBox(height: 8),
@@ -101,7 +100,6 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
             decoration: const InputDecoration(
               labelText: 'Email or phone (optional)',
               helperText: 'Only if you want a reply.',
-              border: OutlineInputBorder(),
               counterText: '',
             ),
           ),

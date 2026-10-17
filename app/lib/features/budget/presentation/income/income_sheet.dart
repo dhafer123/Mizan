@@ -235,7 +235,6 @@ class _IncomeSheetState extends ConsumerState<IncomeSheet> {
                 labelText: 'Name',
                 hintText: 'Grant, job, family…',
                 errorText: _nameError,
-                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 8),
@@ -251,7 +250,6 @@ class _IncomeSheetState extends ConsumerState<IncomeSheet> {
                 labelText: 'Amount',
                 suffixText: _currency.symbol,
                 errorText: _amountError,
-                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 16),
@@ -280,7 +278,6 @@ class _IncomeSheetState extends ConsumerState<IncomeSheet> {
                   labelText: 'Day of the month',
                   helperText: 'In shorter months, it counts on the last day.',
                   errorText: _dayError,
-                  border: const OutlineInputBorder(),
                 ),
               ),
               _Kind.oneOff => InkWell(
@@ -288,7 +285,6 @@ class _IncomeSheetState extends ConsumerState<IncomeSheet> {
                 child: InputDecorator(
                   decoration: const InputDecoration(
                     labelText: 'Date',
-                    border: OutlineInputBorder(),
                     suffixIcon: Icon(Icons.calendar_today_outlined),
                   ),
                   child: Text(

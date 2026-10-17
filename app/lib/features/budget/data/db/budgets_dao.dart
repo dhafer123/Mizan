@@ -20,8 +20,13 @@ class BudgetsDao extends DatabaseAccessor<AppDatabase> with _$BudgetsDaoMixin {
       (select(budgets)..where((b) => b.id.equals(id))).getSingleOrNull();
 
   /// Live (not deleted) budgets, re-emitted on every change.
-  Stream<List<BudgetRow>> watchLive() =>
-      (select(budgets)..where((b) => b.deleted.not())).watch();
+  Stream<List<BudgetRow>> watchLive() => _live().watch();
+
+  /// [watchLive], read once.
+  Future<List<BudgetRow>> getLive() => _live().get();
+
+  SimpleSelectStatement<$BudgetsTable, BudgetRow> _live() =>
+      select(budgets)..where((b) => b.deleted.not());
 
   /// Stores [row]: a create the first time its id is saved, then updates of
   /// the fields that changed. Sync metadata in [row] is ignored. Returns

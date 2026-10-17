@@ -14,7 +14,7 @@ class FakeIncomeSourceRepository implements IncomeSourceRepository {
   final Map<String, IncomeSource> _live;
   final _changes = StreamController<void>.broadcast();
 
-  /// When set, [watchAll] emits this instead.
+  /// When set, [watchAll] emits this instead, and [getAll] returns it.
   BudgetFailure? watchFailure;
 
   /// When set, every write fails with this.
@@ -29,6 +29,10 @@ class FakeIncomeSourceRepository implements IncomeSourceRepository {
       yield _current();
     }
   }
+
+  @override
+  Future<Result<List<IncomeSource>, BudgetFailure>> getAll() async =>
+      _current();
 
   Result<List<IncomeSource>, BudgetFailure> _current() =>
       switch (watchFailure) {

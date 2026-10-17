@@ -196,7 +196,6 @@ class _Typing extends StatelessWidget {
           onSubmitted: (_) => onSubmit(),
           decoration: InputDecoration(
             hintText: 'coffee 2.5 and taxi 8',
-            border: const OutlineInputBorder(),
             suffixIcon: IconButton(
               onPressed: onListen,
               icon: const Icon(Icons.mic_none),

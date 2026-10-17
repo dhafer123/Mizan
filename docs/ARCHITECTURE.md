@@ -56,7 +56,7 @@ mizan/
   app/                              # Flutter app
     lib/
       main.dart
-      app/                          # router, theme, di/ (providers), bootstrap
+      app/                          # router, theme, di/ (providers), widgets/ (shared UI), bootstrap
       core/
         money/                      # Money value object, rounding, formatting
         result/                     # Result<T, Failure>, Failure types
@@ -256,6 +256,7 @@ receipt ─► OCR (ML Kit) ──┘
 | Sync simulation | 2–3 fake clients + an in-memory fake server running random op interleavings with offline periods; assert the 4 invariants in §6 | Dart test harness, 1,000+ random scenarios per CI run |
 | Server | API, permissions, conflict cases, idempotency | pytest, pytest-django |
 | Widget / integration | Add expense, settle up, offline then online flow | `flutter_test`, `integration_test` |
+| Accessibility | Every main screen in both themes at 1× and 2× text: WCAG AA contrast, 48×48 tap targets, labels, no overflow (ADR 0020) | `flutter_test` guidelines |
 | CI | analyze, test (app + server), coverage on `domain/` ≥ 90% | GitHub Actions |
 
 ## 12. Key decisions (write a short ADR for each in `docs/decisions/`)

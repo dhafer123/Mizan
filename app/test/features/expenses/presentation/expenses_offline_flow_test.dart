@@ -14,6 +14,7 @@ import 'package:mizan/features/sync/data/db/outbox_op_type.dart';
 
 import '../../../support/fake_auth_repository.dart';
 import '../../../support/fake_biometric_authenticator.dart';
+import '../../../support/fake_device_preferences_repository.dart';
 import '../../../support/fake_lock_settings_repository.dart';
 import '../../../support/sequential_id_generator.dart';
 import '../../../support/test_database.dart';
@@ -34,6 +35,9 @@ void main() {
           idGeneratorProvider.overrideWithValue(ids),
           authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
           appDatabaseProvider.overrideWithValue(db),
+          devicePreferencesRepositoryProvider.overrideWithValue(
+            FakeDevicePreferencesRepository(onboarded: true),
+          ),
           lockSettingsRepositoryProvider.overrideWithValue(
             FakeLockSettingsRepository(),
           ),

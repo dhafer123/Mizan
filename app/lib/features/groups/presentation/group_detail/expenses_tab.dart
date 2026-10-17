@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../app/widgets/empty_state.dart';
+import '../../../../app/widgets/load_error.dart';
 import '../../../../core/money/money_formatter.dart';
 import '../../../expenses/domain/entities/category.dart';
 import '../../../expenses/presentation/shared/categories_provider.dart';
@@ -8,7 +10,6 @@ import '../../../expenses/presentation/shared/failure_message.dart';
 import '../../domain/entities/group.dart';
 import '../../domain/entities/member.dart';
 import '../shared/group_data_providers.dart';
-import '../shared/load_error.dart';
 
 /// The group's expenses, newest first: what, who paid, and how much.
 class ExpensesTab extends ConsumerWidget {
@@ -32,14 +33,10 @@ class ExpensesTab extends ConsumerWidget {
         .watch(sharedExpensesProvider(group.id))
         .when(
           data: (expenses) => expenses.isEmpty
-              ? const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(24),
-                    child: Text(
-                      'No expenses yet. Add the first one.',
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
+              ? const EmptyState(
+                  icon: Icons.receipt_long_outlined,
+                  title: 'No expenses yet',
+                  message: 'Add the first one with the button below.',
                 )
               : ListView(
                   padding: EdgeInsets.only(
