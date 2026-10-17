@@ -16,6 +16,7 @@ import '../../features/settings/presentation/onboarding/onboarding_controller.da
 import '../../features/settings/presentation/onboarding/onboarding_screen.dart';
 import '../../features/settings/presentation/pin/pin_setup_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
+import '../shell/app_shell.dart';
 
 part 'app_router.g.dart';
 
@@ -52,25 +53,52 @@ GoRouter appRouter(Ref ref) {
       return needed ? AppRoutes.welcome : null;
     },
     routes: [
-      GoRoute(
-        path: AppRoutes.home,
-        builder: (context, state) => const HomeScreen(),
+      // The four tabs (AppShell); every other route opens above them.
+      StatefulShellRoute(
+        builder: (context, state, shell) => AppShell(navigationShell: shell),
+        navigatorContainerBuilder: AppShell.tabs,
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.home,
+                builder: (context, state) => const HomeScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.expenses,
+                builder: (context, state) => const ExpenseListScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.groups,
+                builder: (context, state) => const GroupsScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.budget,
+                builder: (context, state) => const BudgetScreen(),
+              ),
+            ],
+          ),
+        ],
       ),
       GoRoute(
         path: AppRoutes.welcome,
         builder: (context, state) => const OnboardingScreen(),
       ),
       GoRoute(
-        path: AppRoutes.expenses,
-        builder: (context, state) => const ExpenseListScreen(),
-      ),
-      GoRoute(
         path: AppRoutes.categories,
         builder: (context, state) => const CategoriesScreen(),
-      ),
-      GoRoute(
-        path: AppRoutes.budget,
-        builder: (context, state) => const BudgetScreen(),
       ),
       GoRoute(
         path: AppRoutes.income,
@@ -95,10 +123,6 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: AppRoutes.signUp,
         builder: (context, state) => const SignUpScreen(),
-      ),
-      GoRoute(
-        path: AppRoutes.groups,
-        builder: (context, state) => const GroupsScreen(),
       ),
       // Before `/groups/:id`, which would match it too.
       GoRoute(

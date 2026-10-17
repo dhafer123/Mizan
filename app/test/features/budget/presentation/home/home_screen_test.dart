@@ -7,6 +7,7 @@ import 'package:mizan/app/di/budget_providers.dart';
 import 'package:mizan/app/di/core_providers.dart';
 import 'package:mizan/app/di/expenses_providers.dart';
 import 'package:mizan/app/di/groups_providers.dart';
+import 'package:mizan/app/theme/app_colors.dart';
 import 'package:mizan/core/clock/fake_clock.dart';
 import 'package:mizan/core/clock/year_month.dart';
 import 'package:mizan/core/money/currency.dart';
@@ -334,7 +335,7 @@ void main() {
     });
   });
 
-  testWidgets('over budget: shown in red, and the category over its limit', (
+  testWidgets('over budget: in the hero red, and the category over its limit', (
     tester,
   ) async {
     await _pump(
@@ -348,15 +349,20 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final error = Theme.of(
+    // A light red that stays readable on the blue gradient.
+    final negative = AppColors.of(
       tester.element(find.byType(HomeScreen)),
-    ).colorScheme.error;
+    ).heroNegative;
     expect(_moneyLeft(tester), '-65.000 DT'); // 450 - 515
     expect(
       tester.widget<Text>(find.byKey(const ValueKey('moneyLeft'))).style?.color,
-      error,
+      negative,
     );
     expect(find.text('Over budget by 115.000 DT'), findsOneWidget);
+    expect(
+      tester.widget<Text>(find.text('Over budget by 115.000 DT')).style?.color,
+      negative,
+    );
     expect(find.textContaining('left of your'), findsNothing);
     final rentRow = find.ancestor(
       of: _inCard('Top categories', find.text('Rent')),
@@ -490,6 +496,48 @@ void main() {
 
       // 350 instead of 250: ten days later.
       expect(headline(tester), 'Money runs out around Nov 11');
+    });
+
+    group('runway', () {
+      final runOut = find.byKey(const ValueKey('runwayRunOut'));
+
+      testWidgets('lasting past payday: a full bar to the 15th', (
+        tester,
+      ) async {
+        // Runs out on Nov 1, after payday (Oct 15).
+        await _pump(tester, _Repos(expenses: steady, incomes: [_grant(300)]));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Today'), findsOneWidget);
+        expect(find.text('Payday · Oct 15'), findsOneWidget);
+        expect(runOut, findsNothing);
+      });
+
+      testWidgets('running out before payday: marked on the bar', (
+        tester,
+      ) async {
+        // 60 - 50 = 10 left at 10 a day: gone well before the 15th.
+        await _pump(tester, _Repos(expenses: steady, incomes: [_grant(60)]));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Payday · Oct 15'), findsOneWidget);
+        expect(runOut, findsOneWidget);
+        // About 1 day of the 9 to payday: near the start of the bar.
+        final bar = tester.getRect(find.byType(LayoutBuilder).last);
+        final marker = tester.getCenter(runOut);
+        expect(marker.dx - bar.left, lessThan(bar.width * 0.3));
+      });
+
+      testWidgets('no income ahead: the bar ends at the horizon', (
+        tester,
+      ) async {
+        await _pump(tester, _Repos(expenses: steady));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Dec 5'), findsOneWidget);
+        expect(find.textContaining('Payday'), findsNothing);
+        expect(runOut, findsOneWidget, reason: 'already run out: at today');
+      });
     });
 
     testWidgets('no switch when nothing is owed', (tester) async {

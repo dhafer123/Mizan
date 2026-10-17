@@ -7,7 +7,7 @@ import '../../../../core/money/money_formatter.dart';
 import '../../../../core/result/result.dart';
 import '../../domain/entities/category.dart';
 import '../shared/categories_provider.dart';
-import '../shared/category_icon.dart';
+import '../shared/category_color.dart';
 import '../shared/failure_message.dart';
 import 'category_sheet.dart';
 
@@ -164,9 +164,7 @@ class _CategoryTile extends StatelessWidget {
       opacity: dimmed ? 0.6 : 1,
       child: ListTile(
         onTap: onTap,
-        leading: CircleAvatar(
-          child: ExcludeSemantics(child: Icon(categoryIcon(category.icon))),
-        ),
+        leading: CategoryAvatar(category: category),
         title: Text(category.name),
         subtitle: limit == null
             ? null

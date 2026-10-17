@@ -11,7 +11,7 @@ import '../../../../core/money/money.dart';
 import '../../../../core/money/money_formatter.dart';
 import '../../../expenses/presentation/categories/category_sheet.dart';
 import '../../../expenses/presentation/expense_list/selected_month.dart';
-import '../../../expenses/presentation/shared/category_icon.dart';
+import '../../../expenses/presentation/shared/category_color.dart';
 import '../../../expenses/presentation/shared/failure_message.dart';
 import '../../../expenses/presentation/shared/month_bar.dart';
 import '../../domain/value_objects/budget_overview.dart';
@@ -268,11 +268,7 @@ class _CategoryLine extends StatelessWidget {
       onTap: category == null
           ? null
           : () => showCategorySheet(context, category: category),
-      leading: CircleAvatar(
-        child: ExcludeSemantics(
-          child: Icon(categoryIcon(category?.icon ?? '')),
-        ),
-      ),
+      leading: CategoryAvatar(category: category),
       title: Text(category?.name ?? 'Uncategorised'),
       subtitle: limit == null || left == null
           ? Text('${_money.format(line.spent)} spent · no limit')
@@ -280,7 +276,11 @@ class _CategoryLine extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 4),
-                _UsedBar(percent: line.usedPercent!, over: line.isOver),
+                _UsedBar(
+                  percent: line.usedPercent!,
+                  over: line.isOver,
+                  color: categoryColor(context, category),
+                ),
                 const SizedBox(height: 4),
                 Text('${_money.format(line.spent)} of ${_money.format(limit)}'),
                 _LeftText(left: left),
@@ -290,13 +290,14 @@ class _CategoryLine extends StatelessWidget {
   }
 }
 
-/// Progress towards a limit: amber from 80% (the alert threshold), red when
-/// over.
+/// Progress towards a limit: in [color] (the theme's primary if null), amber
+/// from 80% (the alert threshold), red when over.
 class _UsedBar extends StatelessWidget {
-  const _UsedBar({required this.percent, required this.over});
+  const _UsedBar({required this.percent, required this.over, this.color});
 
   final int percent;
   final bool over;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
@@ -307,7 +308,7 @@ class _UsedBar extends StatelessWidget {
           ? colors.error
           : percent >= 80
           ? AppColors.of(context).warning
-          : null,
+          : color,
       minHeight: 6,
       borderRadius: BorderRadius.circular(3),
       semanticsLabel: '$percent% used',

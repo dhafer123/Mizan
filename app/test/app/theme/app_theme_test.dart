@@ -73,6 +73,23 @@ void main() {
         }
       });
 
+      test('text on the hero card is readable across its gradient', () {
+        for (final background in [app.heroStart, app.heroEnd]) {
+          for (final color in [app.onHero, app.onHeroMuted, app.heroNegative]) {
+            expect(
+              _contrast(color, background),
+              greaterThanOrEqualTo(4.5),
+              reason: '$color on $background',
+            );
+          }
+          expect(
+            _contrast(app.heroAccent, background),
+            greaterThanOrEqualTo(3),
+            reason: 'accent bar on $background',
+          );
+        }
+      });
+
       test('has the matching brightness', () {
         expect(
           colors.brightness,
@@ -83,7 +100,11 @@ void main() {
       for (final MapEntry(key: where, value: background)
           in backgrounds.entries) {
         test('chart and warning colours stand out on the $where (3:1)', () {
-          for (final color in [...app.chart, app.chartOther, app.warning]) {
+          for (final color in [
+            ...app.categories,
+            app.chartOther,
+            app.warning,
+          ]) {
             expect(
               _contrast(color, background),
               greaterThanOrEqualTo(3),

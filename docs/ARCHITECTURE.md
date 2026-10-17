@@ -56,7 +56,7 @@ mizan/
   app/                              # Flutter app
     lib/
       main.dart
-      app/                          # router, theme, di/ (providers), widgets/ (shared UI), bootstrap
+      app/                          # router, shell/ (tabs), theme, di/ (providers), widgets/ (shared UI), bootstrap
       core/
         money/                      # Money value object, rounding, formatting
         result/                     # Result<T, Failure>, Failure types

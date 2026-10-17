@@ -346,7 +346,11 @@ class _GroupStep extends ConsumerWidget {
       children: [
         if (signedIn)
           FilledButton.tonalIcon(
-            onPressed: () => context.push(AppRoutes.groups),
+            // Setup is done at this point: finish it and open the tab.
+            onPressed: () async {
+              await ref.read(onboardingControllerProvider.notifier).finish();
+              if (context.mounted) context.go(AppRoutes.groups);
+            },
             icon: const Icon(Icons.group_add_outlined),
             label: const Text('Open groups'),
           )

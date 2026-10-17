@@ -77,6 +77,8 @@ void main() {
     await tester.pumpAndSettle();
 
     // A limit for Food.
+    await tester.ensureVisible(find.widgetWithText(ListTile, 'Food'));
+    await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(ListTile, 'Food'));
     await tester.pumpAndSettle();
     await tester.enterText(
@@ -86,9 +88,7 @@ void main() {
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
 
-    // An expense.
-    await tester.pageBack();
-    await tester.pumpAndSettle();
+    // An expense, on the Expenses tab.
     await tester.tap(find.byTooltip('Expenses'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Add'));
@@ -97,10 +97,13 @@ void main() {
     await tester.tap(find.widgetWithText(ChoiceChip, 'Food'));
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
-    await tester.pageBack();
-    await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Budget'));
     await tester.pumpAndSettle();
+    // The tab kept its scroll position from setting Food's limit.
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('available')),
+      -200,
+    );
 
     expect(
       tester.widget<Text>(find.byKey(const ValueKey('available'))).data,
@@ -126,7 +129,7 @@ void main() {
     );
 
     // The dashboard agrees.
-    await tester.pageBack();
+    await tester.tap(find.byTooltip('Home'));
     await tester.pumpAndSettle();
     expect(
       tester.widget<Text>(find.byKey(const ValueKey('moneyLeft'))).data,

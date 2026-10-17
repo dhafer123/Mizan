@@ -4,7 +4,7 @@ import 'package:flutter/semantics.dart';
 import '../../../../core/money/money_formatter.dart';
 import '../../domain/entities/category.dart';
 import '../../domain/entities/expense.dart';
-import '../shared/category_icon.dart';
+import '../shared/category_color.dart';
 
 /// One expense; swipe it towards the start to delete. Screen readers get
 /// the same delete as an action, since they can't swipe.
@@ -46,11 +46,7 @@ class ExpenseTile extends StatelessWidget {
         customSemanticsActions: {deleteAction: onDismissed},
         child: ListTile(
           onTap: onTap,
-          leading: CircleAvatar(
-            child: ExcludeSemantics(
-              child: Icon(categoryIcon(category?.icon ?? '')),
-            ),
-          ),
+          leading: CategoryAvatar(category: category),
           title: Text(note ?? categoryName),
           subtitle: note == null ? null : Text(categoryName),
           trailing: Text(

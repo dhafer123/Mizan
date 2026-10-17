@@ -7,6 +7,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/widgets/large_text.dart';
 import '../../../../core/money/money.dart';
 import '../../../../core/money/money_formatter.dart';
+import '../../../expenses/presentation/shared/category_color.dart';
 import '../../../expenses/presentation/shared/category_icon.dart';
 import '../../domain/value_objects/dashboard.dart';
 
@@ -22,18 +23,18 @@ class TopCategoriesCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // Slice colours in rank order; "other" is always grey.
+    // Each category in its own colour, as everywhere else; the rest grey.
     final palette = AppColors.of(context);
     final top = dashboard.topCategories;
     final other = dashboard.otherSpent;
 
     final slices = [
-      for (final (i, line) in top.indexed)
+      for (final line in top)
         _Slice(
           name: line.category?.name ?? 'Uncategorised',
           icon: categoryIcon(line.category?.icon ?? ''),
           spent: line.spent,
-          color: palette.chart[i % palette.chart.length],
+          color: categoryColor(context, line.category),
           overLimit: line.isOver,
         ),
       if (other.isPositive)
@@ -59,7 +60,7 @@ class TopCategoriesCard extends StatelessWidget {
       margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => context.push(AppRoutes.budget),
+        onTap: () => context.go(AppRoutes.budget),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -75,24 +76,18 @@ class TopCategoriesCard extends StatelessWidget {
               const SizedBox(height: 12),
               if (dashboard.isEmptyMonth)
                 const _NoSpending()
-              else if (context.hasLargeText)
-                // No room beside the chart at this size: legend below it.
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Center(child: _Donut(slices: slices)),
-                    const SizedBox(height: 12),
-                    legend,
-                  ],
-                )
-              else
-                Row(
-                  children: [
-                    _Donut(slices: slices),
-                    const SizedBox(width: 16),
-                    Expanded(child: legend),
-                  ],
+              else ...[
+                // The donut on top, the legend at full width under it, so
+                // names and amounts never squeeze beside the chart.
+                Center(
+                  child: _Donut(
+                    slices: slices,
+                    total: dashboard.overview.spent,
+                  ),
                 ),
+                const SizedBox(height: 16),
+                legend,
+              ],
             ],
           ),
         ),
@@ -102,32 +97,56 @@ class TopCategoriesCard extends StatelessWidget {
 }
 
 class _Donut extends StatelessWidget {
-  const _Donut({required this.slices});
+  const _Donut({required this.slices, required this.total});
 
   final List<_Slice> slices;
 
+  /// The month's spending, in the hole (unless text is too large for it).
+  final Money total;
+
+  static const _size = 156.0;
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return SizedBox.square(
-      dimension: 120,
-      // The legend reads out the same numbers.
+      dimension: _size,
+      // The legend reads out the same numbers, and the hero the total.
       child: ExcludeSemantics(
-        child: PieChart(
-          PieChartData(
-            sections: [
-              for (final slice in slices)
-                PieChartSectionData(
-                  value: slice.spent.minorUnits.toDouble(),
-                  color: slice.color,
-                  radius: 22,
-                  showTitle: false,
-                ),
-            ],
-            centerSpaceRadius: 34,
-            sectionsSpace: 2,
-            startDegreeOffset: -90,
-            pieTouchData: PieTouchData(enabled: false),
-          ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            PieChart(
+              PieChartData(
+                sections: [
+                  for (final slice in slices)
+                    PieChartSectionData(
+                      value: slice.spent.minorUnits.toDouble(),
+                      color: slice.color,
+                      radius: 20,
+                      showTitle: false,
+                    ),
+                ],
+                centerSpaceRadius: 54,
+                sectionsSpace: 2,
+                startDegreeOffset: -90,
+                pieTouchData: PieTouchData(enabled: false),
+              ),
+            ),
+            if (!context.hasLargeText)
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(_money.format(total), style: theme.textTheme.titleSmall),
+                  Text(
+                    'spent',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+          ],
         ),
       ),
     );
@@ -177,6 +196,8 @@ class _LegendRow extends StatelessWidget {
           Icon(slice.icon, size: 18),
           const SizedBox(width: 6),
           Expanded(
+            // Names get more of the row than amounts.
+            flex: 2,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -195,12 +216,15 @@ class _LegendRow extends StatelessWidget {
           if (!stacked)
             // Shrinks (and wraps) before it would overflow a long name.
             Flexible(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(_money.format(slice.spent), textAlign: TextAlign.end),
-                  Text('$percent%', style: theme.textTheme.bodySmall),
-                ],
+              child: Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(_money.format(slice.spent), textAlign: TextAlign.end),
+                    Text('$percent%', style: theme.textTheme.bodySmall),
+                  ],
+                ),
               ),
             ),
         ],

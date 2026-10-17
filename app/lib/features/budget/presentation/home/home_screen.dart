@@ -28,21 +28,6 @@ class HomeScreen extends ConsumerWidget {
         actions: [
           const SyncStatusButton(),
           IconButton(
-            onPressed: () => context.push(AppRoutes.expenses),
-            icon: const Icon(Icons.receipt_long_outlined),
-            tooltip: 'Expenses',
-          ),
-          IconButton(
-            onPressed: () => context.push(AppRoutes.groups),
-            icon: const Icon(Icons.groups_outlined),
-            tooltip: 'Groups',
-          ),
-          IconButton(
-            onPressed: () => context.push(AppRoutes.budget),
-            icon: const Icon(Icons.savings_outlined),
-            tooltip: 'Budget',
-          ),
-          IconButton(
             onPressed: () => context.push(AppRoutes.settings),
             icon: const Icon(Icons.settings_outlined),
             tooltip: 'Settings',
@@ -116,7 +101,10 @@ class _DashboardBody extends StatelessWidget {
       children: [
         MoneyLeftCard(dashboard: dashboard),
         const SizedBox(height: 12),
-        ForecastCard(owedToMe: dashboard.owedToMe),
+        ForecastCard(
+          owedToMe: dashboard.owedToMe,
+          nextIncome: dashboard.available.next?.date,
+        ),
         const SizedBox(height: 12),
         TopCategoriesCard(dashboard: dashboard),
         const SizedBox(height: 12),

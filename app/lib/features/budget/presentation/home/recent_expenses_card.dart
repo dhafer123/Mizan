@@ -10,7 +10,7 @@ import '../../../expenses/domain/entities/category.dart';
 import '../../../expenses/domain/entities/expense.dart';
 import '../../../expenses/presentation/expense_sheet/expense_sheet.dart';
 import '../../../expenses/presentation/shared/categories_provider.dart';
-import '../../../expenses/presentation/shared/category_icon.dart';
+import '../../../expenses/presentation/shared/category_color.dart';
 
 /// The newest expenses; tap one to edit it, or see them all.
 class RecentExpensesCard extends ConsumerWidget {
@@ -48,7 +48,7 @@ class RecentExpensesCard extends ConsumerWidget {
                   ),
                 ),
                 TextButton(
-                  onPressed: () => context.push(AppRoutes.expenses),
+                  onPressed: () => context.go(AppRoutes.expenses),
                   child: const Text('See all'),
                 ),
               ],
@@ -89,11 +89,7 @@ class _RecentTile extends StatelessWidget {
     final note = expense.note;
     return ListTile(
       onTap: () => showExpenseSheet(context, expense: expense),
-      leading: CircleAvatar(
-        child: ExcludeSemantics(
-          child: Icon(categoryIcon(category?.icon ?? '')),
-        ),
-      ),
+      leading: CategoryAvatar(category: category),
       title: Text(note ?? categoryName),
       subtitle: Text(
         note == null
