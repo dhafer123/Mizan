@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/app_router.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/widgets/animated_bar.dart';
 import '../../../../app/widgets/animated_money.dart';
 import '../../../../core/money/money_formatter.dart';
 import '../../domain/value_objects/dashboard.dart';
@@ -87,10 +88,9 @@ class MoneyLeftCard extends StatelessWidget {
                     const SizedBox(height: 16),
                     // The bar repeats the sentence under it.
                     ExcludeSemantics(
-                      child: LinearProgressIndicator(
-                        value: (overview.usedPercent ?? 0).clamp(0, 100) / 100,
+                      child: AnimatedBar(
+                        value: (overview.usedPercent ?? 0) / 100,
                         minHeight: 8,
-                        borderRadius: BorderRadius.circular(4),
                         color: overview.isOver
                             ? hero.heroNegative
                             : hero.heroAccent,

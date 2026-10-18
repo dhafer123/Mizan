@@ -9,10 +9,12 @@ class FakeDevicePreferencesRepository implements DevicePreferencesRepository {
   FakeDevicePreferencesRepository({
     this.theme = ThemeChoice.system,
     this.onboarded = false,
+    this.reduceMotion = false,
   });
 
   ThemeChoice theme;
   bool onboarded;
+  bool reduceMotion;
 
   /// When set, every load fails with this.
   SettingsFailure? loadFailure;
@@ -33,6 +35,22 @@ class FakeDevicePreferencesRepository implements DevicePreferencesRepository {
   ) async {
     if (saveFailure case final failure?) return Err(failure);
     theme = choice;
+    return const Ok(null);
+  }
+
+  @override
+  Future<Result<bool, SettingsFailure>> loadReduceMotion() async =>
+      switch (loadFailure) {
+        final failure? => Err(failure),
+        null => Ok(reduceMotion),
+      };
+
+  @override
+  Future<Result<void, SettingsFailure>> saveReduceMotion({
+    required bool on,
+  }) async {
+    if (saveFailure case final failure?) return Err(failure);
+    reduceMotion = on;
     return const Ok(null);
   }
 

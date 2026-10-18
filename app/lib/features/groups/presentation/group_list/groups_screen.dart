@@ -7,6 +7,7 @@ import '../../../../app/di/groups_providers.dart';
 import '../../../../app/router/app_router.dart';
 import '../../../../app/widgets/empty_state.dart';
 import '../../../../app/widgets/load_error.dart';
+import '../../../../app/widgets/skeleton.dart';
 import '../../../../core/result/result.dart';
 import '../../../auth/presentation/account_provider.dart';
 import '../../../expenses/presentation/shared/failure_message.dart';
@@ -41,7 +42,7 @@ class GroupsScreen extends ConsumerWidget {
               message: failureMessage(error),
               onRetry: () => ref.invalidate(groupsProvider),
             ),
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const SkeletonList(),
           ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => createGroup(context, ref),

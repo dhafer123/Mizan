@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/di/budget_providers.dart';
 import '../../../../app/di/core_providers.dart';
+import '../../../../app/widgets/haptics.dart';
 import '../../../../core/clock/calendar_day.dart';
 import '../../../../core/money/currency.dart';
 import '../../../../core/money/money_formatter.dart';
@@ -127,6 +128,7 @@ class _IncomeSheetState extends ConsumerState<IncomeSheet> {
     if (!mounted) return;
     switch (result) {
       case Ok():
+        Haptics.saved(context);
         Navigator.of(context).pop(true);
       case Err(:final failure):
         setState(() {
@@ -178,6 +180,7 @@ class _IncomeSheetState extends ConsumerState<IncomeSheet> {
     if (!mounted) return;
     switch (result) {
       case Ok():
+        Haptics.deleted(context);
         Navigator.of(context).pop(true);
       case Err(:final failure):
         setState(() {

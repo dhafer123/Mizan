@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/di/expenses_providers.dart';
 import '../../../../app/widgets/load_error.dart';
+import '../../../../app/widgets/skeleton.dart';
 import '../../../../core/money/money_formatter.dart';
 import '../../../../core/result/result.dart';
 import '../../domain/entities/category.dart';
@@ -28,7 +29,7 @@ class CategoriesScreen extends ConsumerWidget {
               message: failureMessage(error),
               onRetry: () => ref.invalidate(categoriesProvider),
             ),
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const SkeletonList(),
           ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => showCategorySheet(context),

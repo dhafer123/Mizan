@@ -16,6 +16,7 @@ class SecureDevicePreferencesRepository implements DevicePreferencesRepository {
 
   static const themeKey = 'prefs.theme';
   static const onboardedKey = 'prefs.onboarded';
+  static const reduceMotionKey = 'prefs.reduceMotion';
 
   static const _failure = SettingsFailure(SettingsError.storage);
 
@@ -35,6 +36,27 @@ class SecureDevicePreferencesRepository implements DevicePreferencesRepository {
   ) async {
     try {
       await _storage.write(key: themeKey, value: choice.name);
+      return const Ok(null);
+    } on Object {
+      return const Err(_failure);
+    }
+  }
+
+  @override
+  Future<Result<bool, SettingsFailure>> loadReduceMotion() async {
+    try {
+      return Ok(await _storage.read(key: reduceMotionKey) == 'true');
+    } on Object {
+      return const Err(_failure);
+    }
+  }
+
+  @override
+  Future<Result<void, SettingsFailure>> saveReduceMotion({
+    required bool on,
+  }) async {
+    try {
+      await _storage.write(key: reduceMotionKey, value: '$on');
       return const Ok(null);
     } on Object {
       return const Err(_failure);

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../app/widgets/haptics.dart';
 import '../../expenses/domain/value_objects/expense_source.dart';
 import '../../mascot/presentation/penny_pose.dart';
 import 'confirm_items_view.dart';
@@ -93,7 +94,10 @@ class _QuickInputSheetState extends ConsumerState<QuickInputSheet> {
               parse: parse,
               source: source,
               sinceSpeech: sinceSpeech,
-              onSaved: (count) => Navigator.of(context).pop(count),
+              onSaved: (count) {
+                Haptics.saved(context);
+                Navigator.of(context).pop(count);
+              },
               onRetry: switch (source) {
                 ExpenseSource.voice => _controller.listen,
                 ExpenseSource.receipt => _scan,

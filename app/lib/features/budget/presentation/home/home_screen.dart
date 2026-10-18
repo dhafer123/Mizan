@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/app_router.dart';
+import '../../../../app/widgets/entrance.dart';
 import '../../../../app/widgets/load_error.dart';
+import '../../../../app/widgets/skeleton.dart';
 import '../../../expenses/presentation/expense_sheet/expense_sheet.dart';
 import '../../../expenses/presentation/shared/failure_message.dart';
 import '../../../mascot/presentation/penny_card.dart';
@@ -47,7 +49,8 @@ class HomeScreen extends ConsumerWidget {
               message: failureMessage(error),
               onRetry: () => retryDashboard(ref),
             ),
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () =>
+                const SkeletonCards(heights: [96, 200, 120, 280, 200]),
           ),
       floatingActionButton: _AddButtons(
         onQuickInput: () => _quickInput(context, ref),
@@ -130,18 +133,20 @@ class _DashboardBody extends StatelessWidget {
         140 + MediaQuery.paddingOf(context).bottom,
       ),
       children: [
-        const PennyCard(),
-        const SizedBox(height: 12),
-        MoneyLeftCard(dashboard: dashboard),
-        const SizedBox(height: 12),
-        ForecastCard(
-          owedToMe: dashboard.owedToMe,
-          nextIncome: dashboard.available.next?.date,
-        ),
-        const SizedBox(height: 12),
-        TopCategoriesCard(dashboard: dashboard),
-        const SizedBox(height: 12),
-        RecentExpensesCard(expenses: dashboard.recent),
+        // The cards come in one after another, top first.
+        for (final (i, card) in [
+          const PennyCard(),
+          MoneyLeftCard(dashboard: dashboard),
+          ForecastCard(
+            owedToMe: dashboard.owedToMe,
+            nextIncome: dashboard.available.next?.date,
+          ),
+          TopCategoriesCard(dashboard: dashboard),
+          RecentExpensesCard(expenses: dashboard.recent),
+        ].indexed) ...[
+          if (i > 0) const SizedBox(height: 12),
+          Entrance(index: i, child: card),
+        ],
       ],
     );
   }

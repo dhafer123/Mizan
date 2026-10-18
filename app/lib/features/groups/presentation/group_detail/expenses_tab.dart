@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/widgets/empty_state.dart';
 import '../../../../app/widgets/load_error.dart';
+import '../../../../app/widgets/skeleton.dart';
 import '../../../../core/money/money_formatter.dart';
 import '../../../expenses/domain/entities/category.dart';
 import '../../../expenses/presentation/shared/categories_provider.dart';
@@ -62,7 +63,7 @@ class ExpensesTab extends ConsumerWidget {
             message: failureMessage(error),
             onRetry: () => ref.invalidate(sharedExpensesProvider(group.id)),
           ),
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const SkeletonList(),
         );
   }
 }

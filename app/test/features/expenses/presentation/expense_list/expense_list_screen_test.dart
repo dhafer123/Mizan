@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mizan/app/di/core_providers.dart';
 import 'package:mizan/app/di/expenses_providers.dart';
+import 'package:mizan/app/widgets/skeleton.dart';
 import 'package:mizan/core/clock/fake_clock.dart';
 import 'package:mizan/core/money/currency.dart';
 import 'package:mizan/core/money/money.dart';
@@ -15,6 +16,7 @@ import 'package:mizan/features/expenses/presentation/expense_list/expense_tile.d
 
 import '../../../../support/fake_category_repository.dart';
 import '../../../../support/fake_expense_repository.dart';
+import '../../../../support/record_haptics.dart';
 import '../../../../support/sequential_id_generator.dart';
 
 Expense _expense(String id, DateTime date, int millimes, {String? note}) =>
@@ -63,7 +65,7 @@ Future<void> _swipeAway(WidgetTester tester, String text) async {
 void main() {
   testWidgets('loading, then the month grouped by day', (tester) async {
     await _pump(tester);
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.byType(Skeleton), findsOneWidget);
 
     await tester.pumpAndSettle();
 
@@ -145,6 +147,16 @@ void main() {
 
       expect(find.text('coffee'), findsOneWidget);
       expect(repository.deleted, isEmpty);
+    });
+
+    testWidgets('a delete is felt as well as seen', (tester) async {
+      await _pump(tester);
+      await tester.pumpAndSettle();
+      final played = recordHaptics(tester);
+
+      await _swipeAway(tester, 'coffee');
+
+      expect(played, ['HapticFeedbackType.mediumImpact']);
     });
 
     testWidgets('without undo, it is deleted when the snackbar closes', (

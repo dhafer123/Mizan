@@ -9,6 +9,7 @@ import 'package:mizan/app/di/expenses_providers.dart';
 import 'package:mizan/app/di/quick_input_providers.dart';
 import 'package:mizan/app/di/settings_providers.dart';
 import 'package:mizan/app/router/app_router.dart';
+import 'package:mizan/app/widgets/skeleton.dart';
 import 'package:mizan/core/clock/fake_clock.dart';
 import 'package:mizan/core/money/currency.dart';
 import 'package:mizan/core/money/money.dart';
@@ -114,7 +115,7 @@ bool _isOn(WidgetTester tester, String title) =>
 void main() {
   testWidgets('loading, then the settings', (tester) async {
     await _pump(tester);
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.byType(Skeleton), findsOneWidget);
 
     await tester.pumpAndSettle();
 

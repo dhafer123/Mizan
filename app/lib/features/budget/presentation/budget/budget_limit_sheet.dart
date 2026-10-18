@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/di/budget_providers.dart';
 import '../../../../app/di/core_providers.dart';
+import '../../../../app/widgets/haptics.dart';
 import '../../../../core/clock/year_month.dart';
 import '../../../../core/money/currency.dart';
 import '../../../../core/money/money.dart';
@@ -90,6 +91,7 @@ class _BudgetLimitSheetState extends ConsumerState<BudgetLimitSheet> {
     if (!mounted) return;
     switch (result) {
       case Ok():
+        Haptics.saved(context);
         Navigator.of(context).pop(true);
       case Err(:final failure):
         setState(() {

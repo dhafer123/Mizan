@@ -14,10 +14,12 @@ import '../../features/settings/domain/usecases/disable_lock.dart';
 import '../../features/settings/domain/usecases/export_expenses_csv.dart';
 import '../../features/settings/domain/usecases/finish_onboarding.dart';
 import '../../features/settings/domain/usecases/get_lock_status.dart';
+import '../../features/settings/domain/usecases/get_reduce_motion.dart';
 import '../../features/settings/domain/usecases/get_theme_choice.dart';
 import '../../features/settings/domain/usecases/needs_onboarding.dart';
 import '../../features/settings/domain/usecases/set_biometric_unlock.dart';
 import '../../features/settings/domain/usecases/set_pin.dart';
+import '../../features/settings/domain/usecases/set_reduce_motion.dart';
 import '../../features/settings/domain/usecases/set_theme_choice.dart';
 import '../../features/settings/domain/usecases/should_lock_on_resume.dart';
 import '../../features/settings/domain/usecases/unlock_with_biometrics.dart';
@@ -95,6 +97,14 @@ GetThemeChoice getThemeChoice(Ref ref) =>
 @Riverpod(keepAlive: true)
 SetThemeChoice setThemeChoice(Ref ref) =>
     SetThemeChoice(ref.watch(devicePreferencesRepositoryProvider));
+
+@Riverpod(keepAlive: true)
+GetReduceMotion getReduceMotion(Ref ref) =>
+    GetReduceMotion(ref.watch(devicePreferencesRepositoryProvider));
+
+@Riverpod(keepAlive: true)
+SetReduceMotion setReduceMotion(Ref ref) =>
+    SetReduceMotion(ref.watch(devicePreferencesRepositoryProvider));
 
 @Riverpod(keepAlive: true)
 NeedsOnboarding needsOnboarding(Ref ref) => NeedsOnboarding(

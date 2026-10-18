@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../widgets/haptics.dart';
+
 /// The four main places, one tap apart: Home, Expenses, Groups and Budget.
 /// Each tab keeps its own stack; everything else (settings, a group, the
 /// sheets) opens full screen above the tabs.
@@ -60,6 +62,11 @@ class AppShell extends StatelessWidget {
     initialLocation: index == navigationShell.currentIndex,
   );
 
+  void _tap(BuildContext context, int index) {
+    if (index != navigationShell.currentIndex) Haptics.tick(context);
+    _select(index);
+  }
+
   @override
   Widget build(BuildContext context) {
     final index = navigationShell.currentIndex;
@@ -86,10 +93,16 @@ class AppShell extends StatelessWidget {
             ),
             // Out of the way while typing, so fields keep their room.
             if (!keyboardOpen)
-              NavigationBar(
-                selectedIndex: index,
-                onDestinationSelected: _select,
-                destinations: destinations,
+              // The bar pads itself for every system inset, the status bar
+              // too; a Scaffold would remove that top one, but this isn't one.
+              MediaQuery.removePadding(
+                context: context,
+                removeTop: true,
+                child: NavigationBar(
+                  selectedIndex: index,
+                  onDestinationSelected: (index) => _tap(context, index),
+                  destinations: destinations,
+                ),
               ),
           ],
         ),

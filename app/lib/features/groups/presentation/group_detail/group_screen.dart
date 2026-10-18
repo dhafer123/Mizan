@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/widgets/load_error.dart';
+import '../../../../app/widgets/skeleton.dart';
 import '../../../expenses/presentation/shared/failure_message.dart';
 import '../../domain/entities/group.dart';
 import '../add_expense/add_shared_expense_sheet.dart';
@@ -43,10 +44,7 @@ class GroupScreen extends ConsumerWidget {
           onRetry: () => ref.invalidate(groupProvider(groupId)),
         ),
       ),
-      _ => Scaffold(
-        appBar: AppBar(),
-        body: const Center(child: CircularProgressIndicator()),
-      ),
+      _ => Scaffold(appBar: AppBar(), body: const SkeletonList()),
     };
   }
 }

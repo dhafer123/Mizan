@@ -8,6 +8,7 @@ import 'package:mizan/app/di/core_providers.dart';
 import 'package:mizan/app/di/expenses_providers.dart';
 import 'package:mizan/app/di/groups_providers.dart';
 import 'package:mizan/app/theme/app_colors.dart';
+import 'package:mizan/app/widgets/skeleton.dart';
 import 'package:mizan/core/clock/fake_clock.dart';
 import 'package:mizan/core/clock/year_month.dart';
 import 'package:mizan/core/money/currency.dart';
@@ -146,7 +147,7 @@ Finder _inCard(String card, Finder matching) => find.descendant(
 void main() {
   testWidgets('loading, then the dashboard', (tester) async {
     await _pump(tester, _Repos());
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.byType(Skeleton), findsOneWidget);
 
     await tester.pumpAndSettle();
 

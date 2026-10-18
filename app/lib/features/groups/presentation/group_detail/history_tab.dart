@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/widgets/empty_state.dart';
 import '../../../../app/widgets/load_error.dart';
+import '../../../../app/widgets/skeleton.dart';
 import '../../../auth/presentation/account_provider.dart';
 import '../../../expenses/domain/entities/category.dart';
 import '../../../expenses/presentation/shared/categories_provider.dart';
@@ -72,7 +73,7 @@ class HistoryTab extends ConsumerWidget {
             message: failureMessage(error),
             onRetry: () => ref.invalidate(groupHistoryProvider(group.id)),
           ),
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const SkeletonList(),
         );
   }
 }

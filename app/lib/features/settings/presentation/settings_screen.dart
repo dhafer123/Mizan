@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/di/settings_providers.dart';
 import '../../../app/router/app_router.dart';
 import '../../../app/widgets/load_error.dart';
+import '../../../app/widgets/skeleton.dart';
 import '../../../core/result/result.dart';
 import '../../auth/presentation/account_section.dart';
 import '../../beta/presentation/beta_settings_section.dart';
@@ -34,7 +35,7 @@ class SettingsScreen extends ConsumerWidget {
               message: failureMessage(error),
               onRetry: () => ref.invalidate(lockStatusProvider),
             ),
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const SkeletonList(),
           ),
     );
   }

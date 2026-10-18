@@ -7,6 +7,7 @@ import 'package:mizan/features/groups/presentation/group_list/groups_screen.dart
 import 'package:mizan/features/settings/presentation/settings_screen.dart';
 
 import '../../support/app_harness.dart';
+import '../../support/record_haptics.dart';
 
 void main() {
   Future<AppHarness> boot(WidgetTester tester) async {
@@ -42,6 +43,34 @@ void main() {
     await tapTab(tester, 'Home');
     expect(find.byType(HomeScreen), findsOneWidget);
 
+    await app.shutDown(tester);
+  });
+
+  testWidgets('the bar is its own height under a real status bar', (
+    tester,
+  ) async {
+    // A phone's status bar and button bar (physical pixels at 3x).
+    tester.view.padding = const FakeViewPadding(top: 90, bottom: 144);
+    addTearDown(tester.view.resetPadding);
+    final app = await boot(tester);
+
+    final bar = tester.getRect(find.byType(NavigationBar));
+    expect(bar.height, 80 + 48, reason: 'its height, plus the button bar');
+    expect(bar.bottom, 2400 / 3);
+
+    await app.shutDown(tester);
+  });
+
+  testWidgets('switching tabs ticks; the current tab again does not', (
+    tester,
+  ) async {
+    final app = await boot(tester);
+    final played = recordHaptics(tester);
+
+    await tapTab(tester, 'Expenses');
+    await tapTab(tester, 'Expenses');
+
+    expect(played, ['HapticFeedbackType.selectionClick']);
     await app.shutDown(tester);
   });
 

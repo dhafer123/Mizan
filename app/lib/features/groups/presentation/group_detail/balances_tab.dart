@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/di/groups_providers.dart';
+import '../../../../app/widgets/entrance.dart';
 import '../../../../app/widgets/load_error.dart';
+import '../../../../app/widgets/skeleton.dart';
 import '../../../../core/money/money.dart';
 import '../../../../core/money/money_formatter.dart';
 import '../../../auth/presentation/account_provider.dart';
@@ -35,7 +37,7 @@ class BalancesTab extends ConsumerWidget {
           ..invalidate(membersProvider(group.id))
           ..invalidate(groupBalancesProvider(group.id)),
       ),
-      _ => const Center(child: CircularProgressIndicator()),
+      _ => const SkeletonList(),
     };
   }
 }
@@ -64,7 +66,7 @@ class _Balances extends ConsumerWidget {
       ),
       children: [
         if (myMember.isNotEmpty)
-          _Standing(standing: balances.of(myMember.first.id)),
+          Entrance(child: _Standing(standing: balances.of(myMember.first.id))),
         if (members.length == 1)
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
@@ -83,30 +85,36 @@ class _Balances extends ConsumerWidget {
             ),
           ),
         ),
-        for (final member in members)
-          ListTile(
-            key: Key('member-${member.id}'),
-            leading: CircleAvatar(
-              child: Text(member.displayName.characters.first.toUpperCase()),
+        for (final (i, member) in members.indexed)
+          Entrance(
+            index: i + 1,
+            child: ListTile(
+              key: Key('member-${member.id}'),
+              leading: CircleAvatar(
+                child: Text(member.displayName.characters.first.toUpperCase()),
+              ),
+              title: Text(
+                member.userId == me && me != null
+                    ? '${member.displayName} (you)'
+                    : member.displayName,
+              ),
+              subtitle: Text(
+                [
+                  _balanceText(balances.of(member.id), formatter),
+                  if (member.isPlaceholder) 'not on Mizan yet',
+                ].join(' · '),
+              ),
+              trailing: member.isPlaceholder
+                  ? TextButton(
+                      onPressed: () => showInviteSheet(
+                        context,
+                        group: group,
+                        member: member,
+                      ),
+                      child: const Text('Invite'),
+                    )
+                  : null,
             ),
-            title: Text(
-              member.userId == me && me != null
-                  ? '${member.displayName} (you)'
-                  : member.displayName,
-            ),
-            subtitle: Text(
-              [
-                _balanceText(balances.of(member.id), formatter),
-                if (member.isPlaceholder) 'not on Mizan yet',
-              ].join(' · '),
-            ),
-            trailing: member.isPlaceholder
-                ? TextButton(
-                    onPressed: () =>
-                        showInviteSheet(context, group: group, member: member),
-                    child: const Text('Invite'),
-                  )
-                : null,
           ),
         Align(
           alignment: AlignmentDirectional.centerStart,

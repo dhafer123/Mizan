@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/app_router.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/widgets/animated_money.dart';
 import '../../../../app/widgets/large_text.dart';
 import '../../../../core/money/money.dart';
 import '../../../../core/money/money_formatter.dart';
@@ -109,6 +110,38 @@ class _Donut extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final still = MediaQuery.disableAnimationsOf(context);
+    final sum = total.minorUnits.toDouble();
+    // Sweeps round from the top when it first shows: an empty slice holds
+    // the part not drawn yet. Later changes use the chart's own animation.
+    Widget chart(double drawn) => PieChart(
+      duration: still || drawn < 1
+          ? Duration.zero
+          : const Duration(milliseconds: 300),
+      PieChartData(
+        sections: [
+          for (final slice in slices)
+            PieChartSectionData(
+              value: slice.spent.minorUnits.toDouble(),
+              color: slice.color,
+              radius: 20,
+              showTitle: false,
+            ),
+          if (drawn < 1)
+            PieChartSectionData(
+              value: sum * (1 - drawn) / drawn.clamp(0.001, 1),
+              color: Colors.transparent,
+              radius: 20,
+              showTitle: false,
+            ),
+        ],
+        centerSpaceRadius: 54,
+        sectionsSpace: 2,
+        startDegreeOffset: -90,
+        pieTouchData: PieTouchData(enabled: false),
+      ),
+    );
+
     return SizedBox.square(
       dimension: _size,
       // The legend reads out the same numbers, and the hero the total.
@@ -116,28 +149,20 @@ class _Donut extends StatelessWidget {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            PieChart(
-              PieChartData(
-                sections: [
-                  for (final slice in slices)
-                    PieChartSectionData(
-                      value: slice.spent.minorUnits.toDouble(),
-                      color: slice.color,
-                      radius: 20,
-                      showTitle: false,
-                    ),
-                ],
-                centerSpaceRadius: 54,
-                sectionsSpace: 2,
-                startDegreeOffset: -90,
-                pieTouchData: PieTouchData(enabled: false),
+            if (still)
+              chart(1)
+            else
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0, end: 1),
+                duration: const Duration(milliseconds: 800),
+                curve: Curves.easeOutCubic,
+                builder: (context, drawn, _) => chart(drawn),
               ),
-            ),
             if (!context.hasLargeText)
               Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(_money.format(total), style: theme.textTheme.titleSmall),
+                  AnimatedMoney(total, style: theme.textTheme.titleSmall),
                   Text(
                     'spent',
                     style: theme.textTheme.bodySmall?.copyWith(

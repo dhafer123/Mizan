@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/di/core_providers.dart';
+import '../../../app/widgets/haptics.dart';
 import '../../../core/money/money_formatter.dart';
 import '../domain/value_objects/penny_mood.dart';
 import 'penny_head.dart';
@@ -59,7 +60,10 @@ class _PennyCardState extends ConsumerState<PennyCard> {
       child: InkWell(
         key: const ValueKey('pennyCard'),
         borderRadius: BorderRadius.circular(20),
-        onTap: () => setState(() => _taps++),
+        onTap: () {
+          Haptics.tick(context);
+          setState(() => _taps++);
+        },
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 4),
           child: Row(

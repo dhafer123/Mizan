@@ -2,6 +2,7 @@ import 'package:flutter/material.dart' hide Split;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/di/groups_providers.dart';
+import '../../../../app/widgets/haptics.dart';
 import '../../../../core/money/money.dart';
 import '../../../../core/money/money_formatter.dart';
 import '../../../../core/money/money_parser.dart';
@@ -167,6 +168,7 @@ class _AddSharedExpenseSheetState extends ConsumerState<AddSharedExpenseSheet> {
     if (!mounted) return;
     switch (result) {
       case Ok():
+        Haptics.saved(context);
         Navigator.of(context).pop(true);
       case Err(:final failure):
         setState(() {

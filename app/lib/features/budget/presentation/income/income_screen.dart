@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/widgets/empty_state.dart';
 import '../../../../app/widgets/load_error.dart';
+import '../../../../app/widgets/skeleton.dart';
 import '../../../../core/money/money_formatter.dart';
 import '../../../expenses/presentation/shared/failure_message.dart';
 import '../../../mascot/presentation/penny_pose.dart';
@@ -41,7 +42,7 @@ class IncomeScreen extends ConsumerWidget {
               message: failureMessage(error),
               onRetry: () => ref.invalidate(incomeSourcesProvider),
             ),
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const SkeletonList(),
           ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => showIncomeSheet(context),

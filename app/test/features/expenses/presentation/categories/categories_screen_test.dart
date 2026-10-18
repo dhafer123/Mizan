@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mizan/app/di/core_providers.dart';
 import 'package:mizan/app/di/expenses_providers.dart';
+import 'package:mizan/app/widgets/skeleton.dart';
 import 'package:mizan/core/money/currency.dart';
 import 'package:mizan/core/money/money.dart';
 import 'package:mizan/features/expenses/domain/entities/category.dart';
@@ -50,7 +51,7 @@ void main() {
         _gym,
       ],
     );
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.byType(Skeleton), findsOneWidget);
 
     await tester.pumpAndSettle();
 

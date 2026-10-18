@@ -5,7 +5,11 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/di/core_providers.dart';
 import '../../../../app/router/app_router.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/widgets/animated_bar.dart';
+import '../../../../app/widgets/animated_money.dart';
+import '../../../../app/widgets/entrance.dart';
 import '../../../../app/widgets/load_error.dart';
+import '../../../../app/widgets/skeleton.dart';
 import '../../../../core/clock/calendar_day.dart';
 import '../../../../core/money/money.dart';
 import '../../../../core/money/money_formatter.dart';
@@ -57,7 +61,7 @@ class BudgetScreen extends ConsumerWidget {
                     onRetry: () => retryBudgetScreen(ref, month),
                   ),
                   loading: () =>
-                      const Center(child: CircularProgressIndicator()),
+                      const SkeletonCards(heights: [200, 120, 72, 72, 72]),
                 ),
           ),
         ],
@@ -80,8 +84,8 @@ class _BudgetBody extends StatelessWidget {
         bottom: 24 + MediaQuery.paddingOf(context).bottom,
       ),
       children: [
-        _AvailableCard(data: data),
-        _TotalBudgetCard(overview: overview),
+        Entrance(child: _AvailableCard(data: data)),
+        Entrance(index: 1, child: _TotalBudgetCard(overview: overview)),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
           child: Text(
@@ -89,7 +93,11 @@ class _BudgetBody extends StatelessWidget {
             style: Theme.of(context).textTheme.titleSmall,
           ),
         ),
-        for (final line in overview.categories) _CategoryLine(line: line),
+        for (final (i, line) in overview.categories.indexed)
+          Entrance(
+            index: i + 2,
+            child: _CategoryLine(line: line),
+          ),
       ],
     );
   }
@@ -115,9 +123,9 @@ class _AvailableCard extends ConsumerWidget {
           children: [
             Text('Money available', style: theme.textTheme.labelLarge),
             const SizedBox(height: 4),
-            Text(
-              _money.format(available.available),
-              key: const ValueKey('available'),
+            AnimatedMoney(
+              available.available,
+              textKey: const ValueKey('available'),
               style: theme.textTheme.headlineMedium?.copyWith(
                 color: available.available.isNegative
                     ? theme.colorScheme.error
@@ -302,15 +310,13 @@ class _UsedBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    return LinearProgressIndicator(
-      value: percent >= 100 ? 1 : percent / 100,
+    return AnimatedBar(
+      value: percent / 100,
       color: over
           ? colors.error
           : percent >= 80
           ? AppColors.of(context).warning
           : color,
-      minHeight: 6,
-      borderRadius: BorderRadius.circular(3),
       semanticsLabel: '$percent% used',
     );
   }

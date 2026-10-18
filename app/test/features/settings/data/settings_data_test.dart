@@ -49,7 +49,7 @@ void main() {
       FlutterSecureStorage(),
     );
 
-    test('defaults: follow the phone, not onboarded', () async {
+    test('defaults: follow the phone, not onboarded, motion on', () async {
       FlutterSecureStorage.setMockInitialValues({});
 
       expect(
@@ -60,13 +60,21 @@ void main() {
         await repository.loadOnboarded(),
         const Ok<bool, SettingsFailure>(false),
       );
+      expect(
+        await repository.loadReduceMotion(),
+        const Ok<bool, SettingsFailure>(false),
+      );
     });
 
-    test('saves and loads both', () async {
+    test('saves and loads them', () async {
       FlutterSecureStorage.setMockInitialValues({});
 
       await repository.saveThemeChoice(ThemeChoice.dark);
       await repository.saveOnboarded();
+      await repository.saveReduceMotion(on: true);
+      expect((await repository.loadReduceMotion()).valueOrNull, isTrue);
+      await repository.saveReduceMotion(on: false);
+      expect((await repository.loadReduceMotion()).valueOrNull, isFalse);
 
       expect(
         (await repository.loadThemeChoice()).valueOrNull,

@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/app_router.dart';
 import '../../../../app/widgets/empty_state.dart';
+import '../../../../app/widgets/haptics.dart';
 import '../../../../app/widgets/load_error.dart';
+import '../../../../app/widgets/skeleton.dart';
 import '../../../../core/result/result.dart';
 import '../../../mascot/presentation/penny_pose.dart';
 import '../../domain/entities/category.dart';
@@ -63,7 +65,7 @@ class ExpenseListScreen extends ConsumerWidget {
                 message: failureMessage(error),
                 onRetry: () => ref.invalidate(monthExpensesProvider(month)),
               ),
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () => const SkeletonList(),
             ),
           ),
         ],
@@ -111,6 +113,7 @@ class _DayList extends ConsumerWidget {
   void _deleteWithUndo(BuildContext context, WidgetRef ref, Expense expense) {
     final pending = ref.read(pendingDeletesProvider.notifier);
     final messenger = ScaffoldMessenger.of(context);
+    Haptics.deleted(context);
     pending.hide(expense.id);
     // Closing an earlier undo snackbar commits that delete.
     messenger.hideCurrentSnackBar();

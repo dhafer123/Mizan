@@ -6,6 +6,7 @@ import 'package:mizan/app/di/budget_providers.dart';
 import 'package:mizan/app/di/core_providers.dart';
 import 'package:mizan/app/di/expenses_providers.dart';
 import 'package:mizan/app/di/groups_providers.dart';
+import 'package:mizan/app/widgets/skeleton.dart';
 import 'package:mizan/core/clock/fake_clock.dart';
 import 'package:mizan/core/clock/year_month.dart';
 import 'package:mizan/core/money/currency.dart';
@@ -97,7 +98,7 @@ Finder _inTile(String title, String text) => find.descendant(
 void main() {
   testWidgets('loading, then the month', (tester) async {
     await _pump(tester);
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.byType(Skeleton), findsOneWidget);
 
     await tester.pumpAndSettle();
 

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/di/core_providers.dart';
 import '../../../../app/di/expenses_providers.dart';
+import '../../../../app/widgets/haptics.dart';
 import '../../../../core/money/currency.dart';
 import '../../../../core/money/money.dart';
 import '../../../../core/money/money_formatter.dart';
@@ -112,6 +113,7 @@ class _CategorySheetState extends ConsumerState<CategorySheet> {
 
     switch (result) {
       case Ok():
+        Haptics.saved(context);
         Navigator.of(context).pop(true);
       case Err(:final failure):
         setState(() {

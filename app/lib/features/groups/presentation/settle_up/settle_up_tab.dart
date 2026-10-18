@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/di/groups_providers.dart';
 import '../../../../app/widgets/load_error.dart';
+import '../../../../app/widgets/skeleton.dart';
 import '../../../../core/money/money_formatter.dart';
 import '../../../../core/result/result.dart';
 import '../../../expenses/presentation/shared/failure_message.dart';
@@ -49,7 +50,7 @@ class SettleUpTab extends ConsumerWidget {
           ..invalidate(groupBalancesProvider(group.id))
           ..invalidate(groupLedgerProvider(group.id)),
       ),
-      _ => const Center(child: CircularProgressIndicator()),
+      _ => const SkeletonList(),
     };
   }
 }
