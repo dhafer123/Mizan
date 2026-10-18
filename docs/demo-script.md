@@ -37,7 +37,7 @@ One phone (Galaxy A16) on camera, as **Dhafer**. The roommate **Sami** is a real
 |---|---|---|---|
 | 0:00–0:08 | Home | Hold on Home: Penny, money left, the forecast card. | "Mizan is a budget app for students. It works offline and warns you *before* you run out." |
 | 0:08–0:22 | Quick input | Tap the mic and say "coffee 2.5 and taxi 8". The confirm screen shows two items; tap Save. Penny cheers and money left counts down. | "I just say what I spent. Speech and parsing run on the phone, and nothing is saved until I confirm." |
-| 0:22–0:32 | Home forecast | Scroll to the forecast card: the runway from today to payday, with the run-out marked before payday. | "At this pace my money runs out around the 25th, a week before my scholarship arrives." |
+| 0:22–0:32 | Home forecast | Scroll to the forecast card: the runway from today to payday, with the run-out marked before payday. | "At this pace my money runs out around the 24th, a week before my scholarship arrives." (Read the date off the card: the seed alone gives Oct 25, and the voice entry can pull it a day earlier.) |
 | 0:32–0:48 | Groups → Flat 4B | Add expense: Rent, 600, paid by Dhafer, split equally. Open Balances: "You're owed 286.500 DT". | "Rent is shared with my roommate Sami. Mizan splits it to the millime, and the balances always add up to zero." |
 | 0:48–1:02 | Airplane mode | Swipe down and turn airplane mode on; the cloud icon shows **Offline**. Edit today's taxi to 7. The icon shows **Changes waiting to sync**. | "No signal? Everything still works. Every change waits in an outbox." |
 | 1:02–1:10 | Sync | Turn airplane mode off. The icon goes **Syncing** → **Synced**. | "Back online, it syncs by itself, ordered by the server, never by phone clocks." |
