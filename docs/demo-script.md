@@ -44,6 +44,28 @@ One phone (Galaxy A16) on camera, as **Dhafer**. The roommate **Sami** is a real
 | 1:10–1:25 | Settle up | Off camera, on the PC: `python manage.py demo_roommate pay` (it prints "Sami paid Dhafer 286.500 DT"). On the phone, open Flat 4B → Settle up and tap Sync now if needed. It shows **Everyone is settled up.** and Penny celebrates. | "Sami pays me back from his phone. Payments are never edited, only reversed, so the history stays honest." |
 | 1:25–1:30 | Home | Back to Home. | "Mizan: know before you're broke." |
 
+## With onboarding (longer cut)
+
+The app shows its setup only on a fresh install, and setup enters the income and budget. So seed without them and clear the app:
+
+```powershell
+.venv\Scripts\python manage.py seed_demo --reset --onboarding
+adb shell pm clear com.mizan.mizan
+adb shell pm grant com.mizan.mizan android.permission.POST_NOTIFICATIONS
+adb shell pm grant com.mizan.mizan android.permission.RECORD_AUDIO
+```
+
+Clearing the app also removes the assistant model. The demo phrase doesn't need it, because the rules read it.
+
+On camera:
+1. Welcome → **Get started**.
+2. Your income → **Add income**: Scholarship, 450, Monthly, day 1 → **Save** → **Next**.
+3. A monthly budget → **Set a budget**: 450 → **Next**.
+4. Share costs → **Sign in** with `dhafer@example.com` / `mizan-demo-2026` → back → **Done**.
+5. Home: four weeks of history and Flat 4B sync down. Wait for **Synced** and the forecast warning, then continue with the shots above.
+
+The income and budget made during setup upload when you sign in. That's why `--onboarding` leaves them out of the seed.
+
 ## If something goes wrong
 
 - **The cloud icon stays Offline after airplane mode:** wait for Wi-Fi to reconnect, then tap the icon → **Sync now**.

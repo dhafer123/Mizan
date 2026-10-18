@@ -107,8 +107,12 @@ def reset():
     users.delete()
 
 
-def seed(today=None):
-    """Creates both accounts and their data. Returns (dhafer, sami, group)."""
+def seed(today=None, onboarding=False):
+    """Creates both accounts and their data. Returns (dhafer, sami, group).
+
+    With `onboarding`, Dhafer has no income or budget yet: the video enters
+    them in the app's setup, which uploads them on sign-in. Seeding them too
+    would count the scholarship twice."""
     today = today or date.today()
     if User.objects.filter(email__in=[DHAFER[0], SAMI[0]]).exists():
         raise DemoError("Demo accounts exist already: reset first.")
@@ -119,13 +123,13 @@ def seed(today=None):
     # --- Dhafer's month: income, budget, a food limit, four weeks of spending ---
     month = today.strftime("%Y-%m")
     income_id = str(uuid.uuid4())
-    personal = [
+    personal = [] if onboarding else [
         _op("income_sources", income_id, id=income_id, name="Scholarship", amountMinor=INCOME,
             currency=CURRENCY, scheduleType="monthly", dayOfMonth=1, date=None),
         _op("budgets", f"budget-{month}", id=f"budget-{month}", month=month,
             totalLimitMinor=BUDGET, currency=CURRENCY),
-        _op("categories", "food", "update", 0, monthlyLimitMinor=FOOD_LIMIT),
     ]
+    personal.append(_op("categories", "food", "update", 0, monthlyLimitMinor=FOOD_LIMIT))
     rng = random.Random(2026)  # the same month on every run
     for back in range(28, 0, -1):
         day = today - timedelta(days=back)

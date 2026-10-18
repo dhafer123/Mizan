@@ -8,7 +8,7 @@ from accounts.models import User
 from demo import services
 from groups.balances import balances
 from groups.models import Member
-from ledger.models import Expense
+from ledger.models import Budget, Expense, IncomeSource
 
 TODAY = date(2026, 10, 18)
 
@@ -76,6 +76,14 @@ def test_sami_pays_what_he_owes(seeded):
     assert services.roommate_pays(TODAY) == 286_500
     assert balances(group)[roommate] == 0
     assert services.roommate_pays(TODAY) == 0, "nothing left to pay"
+
+
+def test_for_onboarding_the_income_and_budget_are_left_to_the_app(db):
+    dhafer, _, _ = services.seed(TODAY, onboarding=True)
+
+    assert not IncomeSource.objects.filter(owner=dhafer).exists()
+    assert not Budget.objects.filter(owner=dhafer).exists()
+    assert Expense.objects.filter(owner=dhafer).exists(), "the history is still there"
 
 
 def test_equal_shares_add_up_with_extra_millimes_to_the_lowest_ids():

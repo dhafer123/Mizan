@@ -11,12 +11,16 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("--reset", action="store_true", help="Remove the demo accounts first.")
         parser.add_argument("--today", type=date.fromisoformat, help="Pretend it's this day (YYYY-MM-DD).")
+        parser.add_argument(
+            "--onboarding", action="store_true",
+            help="No income or budget for Dhafer: the video enters them in the app's setup.",
+        )
 
-    def handle(self, *args, reset, today, **options):
+    def handle(self, *args, reset, today, onboarding, **options):
         if reset:
             services.reset()
         try:
-            dhafer, sami, group = services.seed(today)
+            dhafer, sami, group = services.seed(today, onboarding=onboarding)
         except services.DemoError as e:
             raise CommandError(str(e)) from e
         self.stdout.write(f"Sign in as {dhafer.email} (or {sami.email}), password {services.PASSWORD}")
