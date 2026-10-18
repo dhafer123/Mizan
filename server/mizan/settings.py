@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     "groups",
     "notifications",
     "beta",
+    "demo",
 ]
 
 # API only: no sessions, CSRF cookies or templates. Auth is JWT.
