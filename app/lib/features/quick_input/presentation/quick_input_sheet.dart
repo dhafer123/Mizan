@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../expenses/domain/value_objects/expense_source.dart';
-import '../../mascot/domain/value_objects/penny_mood.dart';
-import '../../mascot/presentation/penny_head.dart';
+import '../../mascot/presentation/penny_pose.dart';
 import 'confirm_items_view.dart';
 import 'quick_input_controller.dart';
 import 'quick_input_state.dart';
@@ -133,10 +132,10 @@ class _Listening extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text('Listening…', style: theme.textTheme.titleLarge),
-        const SizedBox(height: 16),
-        // Penny listens along, bouncing as words come in.
-        PennyHead(mood: PennyMood.listening, size: 96, pokes: heard.length),
-        const SizedBox(height: 16),
+        const SizedBox(height: 8),
+        // Penny listens along, hopping as words come in.
+        PennyPose(PennyArt.listen, size: 140, hops: heard.length),
+        const SizedBox(height: 8),
         Text(
           heard.isEmpty
               ? 'Say what you paid, like "coffee 2.5 and taxi 8".'

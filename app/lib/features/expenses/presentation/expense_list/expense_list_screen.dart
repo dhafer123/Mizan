@@ -6,6 +6,7 @@ import '../../../../app/router/app_router.dart';
 import '../../../../app/widgets/empty_state.dart';
 import '../../../../app/widgets/load_error.dart';
 import '../../../../core/result/result.dart';
+import '../../../mascot/presentation/penny_pose.dart';
 import '../../domain/entities/category.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/value_objects/expense_day.dart';
@@ -141,7 +142,7 @@ class _EmptyMonth extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const EmptyState(
-    icon: Icons.receipt_long_outlined,
+    penny: PennyArt.phone,
     title: 'No expenses this month',
     message: 'Tap Add to record what you spend.',
   );

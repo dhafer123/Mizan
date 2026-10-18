@@ -13,6 +13,7 @@ import '../../../budget/presentation/budget/budget_limit_sheet.dart';
 import '../../../budget/presentation/budget/budget_providers.dart';
 import '../../../budget/presentation/income/income_sheet.dart';
 import '../../../expenses/presentation/shared/failure_message.dart';
+import '../../../mascot/presentation/penny_pose.dart';
 import 'onboarding_controller.dart';
 
 const _money = MoneyFormatter();
@@ -144,17 +145,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 }
 
-/// A step's layout: an icon, a title, a short explanation and the step's
-/// own content, scrollable for large text.
+/// A step's layout: Penny in a pose for the step, a title, a short
+/// explanation and the step's own content, scrollable for large text.
 class _StepPage extends StatelessWidget {
   const _StepPage({
-    required this.icon,
+    required this.penny,
     required this.title,
     required this.body,
     this.children = const [],
   });
 
-  final IconData icon;
+  final PennyArt penny;
   final String title;
   final String body;
   final List<Widget> children;
@@ -167,7 +168,7 @@ class _StepPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 48, color: theme.colorScheme.primary),
+          Center(child: PennyPose(penny, size: 170)),
           const SizedBox(height: 16),
           Semantics(
             header: true,
@@ -194,10 +195,11 @@ class _WelcomeStep extends StatelessWidget {
       title: Text(text),
     );
     return _StepPage(
-      icon: Icons.balance,
+      penny: PennyArt.wave,
       title: 'Welcome to Mizan',
       body:
-          'A minute of setup: your income, a budget, and a group if you '
+          "Hi, I'm Penny! I'll keep an eye on your money with you. A minute "
+          'of setup: your income, a budget, and a group if you '
           'share costs. Skip anything; you can change it all later.',
       children: [
         point(Icons.cloud_off_outlined, 'Log what you spend, even offline.'),
@@ -217,7 +219,7 @@ class _IncomeStep extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return _StepPage(
-      icon: Icons.payments_outlined,
+      penny: PennyArt.wallet,
       title: 'Your income',
       body:
           'A grant, a job, family support… Mizan uses it to work out what '
@@ -278,7 +280,7 @@ class _BudgetStep extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final month = YearMonth.of(ref.watch(clockProvider).now());
     return _StepPage(
-      icon: Icons.savings_outlined,
+      penny: PennyArt.budget,
       title: 'A monthly budget',
       body:
           'The most you want to spend in a month. Mizan warns you when you '
@@ -335,7 +337,7 @@ class _GroupStep extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final signedIn = ref.watch(accountProvider).value != null;
     return _StepPage(
-      icon: Icons.groups_outlined,
+      penny: PennyArt.friends,
       title: 'Share costs? (optional)',
       body: signedIn
           ? 'Split rent, groceries or a trip and see who owes whom. Create a '

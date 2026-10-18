@@ -48,6 +48,10 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
+  # Penny's poses, made from docs/brand/penny by tool/penny/make_poses.py.
+  assets:
+    - assets/penny/
+
   # Manrope (SIL Open Font License, assets/fonts/OFL.txt), static weights
   # cut from the Google Fonts variable font. Bundled, so no font package and
   # no download at runtime.

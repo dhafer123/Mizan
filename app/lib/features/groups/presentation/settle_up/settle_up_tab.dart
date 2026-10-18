@@ -6,6 +6,7 @@ import '../../../../app/widgets/load_error.dart';
 import '../../../../core/money/money_formatter.dart';
 import '../../../../core/result/result.dart';
 import '../../../expenses/presentation/shared/failure_message.dart';
+import '../../../mascot/presentation/penny_pose.dart';
 import '../../domain/entities/group.dart';
 import '../../domain/entities/member.dart';
 import '../../domain/entities/settlement.dart';
@@ -93,7 +94,19 @@ class _SettleUp extends ConsumerWidget {
       ),
       children: [
         header('Suggested payments'),
-        if (transfers.isEmpty)
+        // Settled after spending together: Penny celebrates. A group with
+        // nothing in it yet just says so.
+        if (transfers.isEmpty && ledger.expenses.isNotEmpty)
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Column(
+              children: [
+                PennyPose(PennyArt.celebrate, size: 140),
+                Text('Everyone is settled up.', textAlign: TextAlign.center),
+              ],
+            ),
+          )
+        else if (transfers.isEmpty)
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: Text('Everyone is settled up.'),

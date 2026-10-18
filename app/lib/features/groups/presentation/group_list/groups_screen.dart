@@ -10,6 +10,7 @@ import '../../../../app/widgets/load_error.dart';
 import '../../../../core/result/result.dart';
 import '../../../auth/presentation/account_provider.dart';
 import '../../../expenses/presentation/shared/failure_message.dart';
+import '../../../mascot/presentation/penny_pose.dart';
 import '../../domain/entities/group.dart';
 import '../shared/group_data_providers.dart';
 import '../shared/name_sheet.dart';
@@ -81,7 +82,7 @@ class _Empty extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final signedIn = ref.watch(accountProvider).value != null;
     return EmptyState(
-      icon: Icons.groups_outlined,
+      penny: PennyArt.friends,
       title: 'No groups yet',
       message: signedIn
           ? 'Share rent, groceries or a trip. Create a group, or join one '

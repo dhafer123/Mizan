@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
-/// An error state with a retry button. Scrolls when large text makes it
-/// taller than the space it has.
+import '../../features/mascot/presentation/penny_pose.dart';
+
+/// An error state with a worried Penny and a retry button. Scrolls when
+/// large text makes it taller than the space it has.
 class LoadError extends StatelessWidget {
   const LoadError({required this.message, required this.onRetry, super.key});
 
@@ -10,16 +12,13 @@ class LoadError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ExcludeSemantics(
-              child: Icon(Icons.error_outline, size: 56, color: colors.error),
-            ),
+            const PennyPose(PennyArt.worried, size: 120),
             const SizedBox(height: 16),
             // Read out as soon as it appears.
             Semantics(

@@ -7,6 +7,7 @@ import '../../../auth/presentation/account_provider.dart';
 import '../../../expenses/domain/entities/category.dart';
 import '../../../expenses/presentation/shared/categories_provider.dart';
 import '../../../expenses/presentation/shared/failure_message.dart';
+import '../../../mascot/presentation/penny_pose.dart';
 import '../../domain/entities/group.dart';
 import '../../domain/value_objects/change_kind.dart';
 import '../shared/group_data_providers.dart';
@@ -40,7 +41,7 @@ class HistoryTab extends ConsumerWidget {
         .when(
           data: (entries) => entries.isEmpty
               ? const EmptyState(
-                  icon: Icons.history,
+                  penny: PennyArt.sleep,
                   title: 'No changes yet',
                   message: 'Changes show up here once they sync.',
                 )

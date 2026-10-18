@@ -5,6 +5,7 @@ import '../../../../app/widgets/empty_state.dart';
 import '../../../../app/widgets/load_error.dart';
 import '../../../../core/money/money_formatter.dart';
 import '../../../expenses/presentation/shared/failure_message.dart';
+import '../../../mascot/presentation/penny_pose.dart';
 import '../../domain/entities/income_source.dart';
 import '../../domain/value_objects/income_schedule.dart';
 import '../budget/budget_providers.dart';
@@ -90,7 +91,7 @@ class _NoIncome extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const EmptyState(
-    icon: Icons.payments_outlined,
+    penny: PennyArt.wallet,
     title: 'No income yet',
     message:
         'Add your grant, job or family support to see what you can spend '
