@@ -7,9 +7,10 @@ plugins {
 
 android {
     // flutter_gemma bundles engines Mizan never calls: the .litertlm engine
-    // (the assistant is a MediaPipe .task model) and RAG (embeddings, text
-    // chunking, vector store). Each is loaded only when its API is used, so
-    // leaving them out saves about 70 MB per ABI.
+    // (the assistant is a MediaPipe .task model), RAG (embeddings, text
+    // chunking, vector store) and MediaPipe's vision tasks and image
+    // generator (receipts use ML Kit). Each is loaded only when its API is
+    // used, so leaving them out saves about 110 MB per ABI (task 6.3).
     packaging {
         jniLibs {
             excludes += setOf(
@@ -18,6 +19,9 @@ android {
                 "**/libgemma_embedding_model_jni.so",
                 "**/libtext_chunker_jni.so",
                 "**/libsqlite_vector_store_jni.so",
+                "**/libmediapipe_tasks_vision_jni.so",
+                "**/libmediapipe_tasks_vision_image_generator_jni.so",
+                "**/libimagegenerator_gpu.so",
             )
         }
     }

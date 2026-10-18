@@ -35,12 +35,15 @@ From `app/`: `dart run tool/forecast_backtest.dart <export.csv> --income AMOUNT:
 
 ## Performance
 
+From `app/`: `integration_test/perf_test.dart` (profile build, on the phone; how to run is at the top of the file) ten times, then `dart run tool/perf_summary.dart build/perf_runs`. Cold start: release APK, `adb shell am start -W` after a force-stop (`TotalTime`, which ends at Flutter's first frame), ten launches after the first one after install. The screen runs at 90 Hz, so a frame's budget is 11.1 ms. See ADR 0026.
+
 | Date | Metric | Value |
 |---|---|---|
-| | Cold start (s) | |
-| | Scroll 2,000 expenses (dropped frames %) | |
-| | Sync 500 ops, push + pull (s) | |
-| | APK size (MB) | |
+| 2026-10-18 | Cold start (s) | 0.42 (median of 10, release, with data; range 0.40–0.44). 0.43 on a fresh install after the APK trim |
+| 2026-10-18 | Scroll 2,000 expenses (dropped frames %) | 0.58% of moving frames over 11.1 ms (median of 10 runs; 240 / 42,827 in all); build p99 7.4 ms, raster p99 6.9 ms. Profile, 24 finger flicks per run |
+| 2026-10-18 | Open Expenses with 2,000 rows (ms) | 56 (median of 10, range 54–71), from the tap to the first rows on screen |
+| 2026-10-18 | Sync 500 ops, push + pull (s) | 4.40 to push 500 new expenses and pull back the merged result (median of 10, range 3.68–4.72); 0.91 for a fresh phone to pull them (500 expenses + 500 history rows; range 0.78–1.08). Phone on Wi-Fi to the dev server on the PC (`runserver`, `DEBUG` off, local Postgres) |
+| 2026-10-18 | APK size (MB) | 64.5 for arm64-v8a (was 101.4; ADR 0026), 32.2 for armeabi-v7a. Release, split per ABI |
 
 ## Beta
 
