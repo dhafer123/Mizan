@@ -221,8 +221,9 @@ The money and group logic is built and proven first, with no UI, because everyth
   Delete server data, keep a local copy if the user wants, and a short privacy page.
 - [ ] **6.5 ADRs**
   The 6 decisions in ARCHITECTURE.md §12, each in about half a page.
-- [ ] **6.6 README**
+- [x] **6.6 README**
   GIF, feature list, architecture diagram, sync explanation, metrics table, how to run (app + server), and the test strategy.
+  *Note (2026-10-18):* Done ahead of 6.4/6.5 (decided with the user). The GIF (29 s, 1.4 MB) and five screenshots are cut from the demo recording into `docs/media/`. The diagrams are Mermaid, so GitHub draws them. The metrics come from METRICS.md, with domain coverage re-measured (96.4%). No license file yet: the README doesn't claim one.
 - [ ] **6.7 Demo video** (90 s)
   Voice entry → forecast warning → shared rent with a roommate → airplane-mode edit → sync → settle up.
 - [ ] **6.8 Release + CV**
