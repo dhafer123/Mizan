@@ -11,6 +11,8 @@ a notification:
 |                                    | the one that pushed            |                             |
 | a new shared expense               | (as above)                     | the other members           |
 | someone joins a group (invite)     | every member's phones          | the other members           |
+| someone leaves a group             | every member's phones, and the | -                           |
+|                                    | leaver's                       |                             |
 | weekly reminder (management cmd)   | -                              | each member who owes money  |
 """
 
@@ -85,6 +87,13 @@ def joined(user, group, member):
             ),
         ]
     )
+
+
+def left(user, group, member):
+    """`user` left `group` (`member` is now removed): everyone syncs, the
+    leaver's other phones included, so they drop the group too."""
+    others = Member.objects.filter(group=group, deleted=False, user__isnull=False).exclude(user=user)
+    send([Push(user.pk), *(Push(m.user_id, group_id=group.entity_id) for m in others)])
 
 
 def settle_up_reminders():

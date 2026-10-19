@@ -20,7 +20,9 @@ class FakeGroupRepository implements GroupRepository {
   final history = <HistoryEntry>[];
   final settlements = <Settlement>[];
   final tokens = <String>[];
+  final left = <String>[];
   Result<String, GroupFailure> joinResult = const Ok('g1');
+  Result<void, GroupFailure> leaveResult = const Ok(null);
 
   @override
   Stream<Result<List<Group>, GroupFailure>> watchGroups() =>
@@ -132,5 +134,14 @@ class FakeGroupRepository implements GroupRepository {
   Future<Result<String, GroupFailure>> join(String token) async {
     tokens.add(token);
     return joinResult;
+  }
+
+  @override
+  Future<Result<void, GroupFailure>> leave(String groupId) async {
+    if (leaveResult case Err()) return leaveResult;
+    left.add(groupId);
+    groups.removeWhere((g) => g.id == groupId);
+    members.removeWhere((m) => m.groupId == groupId);
+    return leaveResult;
   }
 }

@@ -10,6 +10,9 @@ otherwise joining adds a new member.
 Joining writes a member row like push does: under the ledger lock, with
 history, so other members' phones pull the change and the joiner's phone
 can backfill the group (`/sync/pull?group=`).
+
+A member leaves here too, once their balance is 0: their member row is
+removed (a tombstone), so their phone pulls it and stops getting the group.
 """
 
 import secrets
@@ -21,10 +24,11 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.exceptions import APIException
 
-from notifications.services import joined
+from notifications.services import joined, left
 from sync.db import lock_ledger
 from sync.models import EntityHistory
 
+from .balances import balances
 from .models import Group, GroupInvite, Member
 
 INVITE_TTL = timedelta(days=7)
@@ -76,6 +80,12 @@ class PlaceholderTaken(_GroupError):
     status_code = status.HTTP_409_CONFLICT
     default_code = "placeholder_taken"
     default_detail = "Someone already joined as this member."
+
+
+class BalanceNotZero(_GroupError):
+    status_code = status.HTTP_409_CONFLICT
+    default_code = "balance_not_zero"
+    default_detail = "Settle up before leaving the group."
 
 
 def _is_member(user, group):
@@ -167,6 +177,30 @@ def join(user, token):
         invite.save()
         joined(user, group, member)
         return group, member
+
+
+def leave(user, group_id):
+    """`user` leaves `group_id` (an entity id). Their balance must be 0, so
+    nobody is left owed. Leaving a group already left is refused like any
+    group the user isn't in."""
+    with transaction.atomic():
+        lock_ledger()
+        group = Group.objects.filter(entity_id=group_id, deleted=False).first()
+        member = (
+            Member.objects.select_for_update().filter(group=group, user=user, deleted=False).first()
+            if group is not None
+            else None
+        )
+        if member is None:
+            raise GroupNotFound()
+        if balances(group).get(member.entity_id, 0) != 0:
+            raise BalanceNotZero()
+        member.deleted = True
+        member.updated_by = user
+        member.save()
+        _history(user, group, member, EntityHistory.Kind.DELETED)
+        left(user, group, member)
+        return group
 
 
 def display_name(user):

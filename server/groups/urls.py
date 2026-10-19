@@ -6,4 +6,5 @@ urlpatterns = [
     path("invites/<str:token>", views.InviteView.as_view(), name="group-invite"),
     path("invites/<str:token>/join", views.JoinView.as_view(), name="group-join"),
     path("<str:group_id>/invites", views.CreateInviteView.as_view(), name="group-invites"),
+    path("<str:group_id>/leave", views.LeaveView.as_view(), name="group-leave"),
 ]

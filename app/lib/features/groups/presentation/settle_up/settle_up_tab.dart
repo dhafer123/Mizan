@@ -29,11 +29,13 @@ class SettleUpTab extends ConsumerWidget {
     final members = ref.watch(membersProvider(group.id));
     final transfers = ref.watch(suggestedTransfersProvider(group.id));
     final ledger = ref.watch(groupLedgerProvider(group.id));
+    // The last data stays up while a provider refreshes (e.g. balances
+    // recomputed after a sync), instead of blinking to a skeleton.
     return switch ((members, transfers, ledger)) {
       (
-        AsyncData(value: final members),
-        AsyncData(value: final transfers),
-        AsyncData(value: final ledger),
+        AsyncValue(value: final members?),
+        AsyncValue(value: final transfers?),
+        AsyncValue(value: final ledger?),
       ) =>
         _SettleUp(
           group: group,

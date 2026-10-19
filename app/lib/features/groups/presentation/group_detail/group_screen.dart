@@ -8,13 +8,15 @@ import '../../domain/entities/group.dart';
 import '../add_expense/add_shared_expense_sheet.dart';
 import '../settle_up/settle_up_tab.dart';
 import '../shared/group_data_providers.dart';
+import '../shared/leave_group_dialog.dart';
 import 'balances_tab.dart';
 import 'expenses_tab.dart';
 import 'history_tab.dart';
 import 'invite_sheet.dart';
 
 /// A group: who owes what (balances, with members), how to settle up, its
-/// expenses, and its edit history. Invite people, add placeholders, add expenses.
+/// expenses, and its edit history. Invite people, add placeholders, add
+/// expenses, or leave.
 class GroupScreen extends ConsumerWidget {
   const GroupScreen({required this.groupId, super.key});
 
@@ -23,9 +25,11 @@ class GroupScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final group = ref.watch(groupProvider(groupId));
+    // Data first, even while refreshing: falling back to the skeleton would
+    // rebuild the tabs and jump back to Balances mid-action.
     return switch (group) {
-      AsyncData(value: final Group group) => _Loaded(group: group),
-      AsyncData() => Scaffold(
+      AsyncValue(value: final Group group) => _Loaded(group: group),
+      AsyncValue(hasValue: true) => Scaffold(
         appBar: AppBar(),
         body: const Center(
           child: Padding(
@@ -54,6 +58,12 @@ class _Loaded extends ConsumerWidget {
 
   final Group group;
 
+  /// Back to the list once left: this screen's group is gone.
+  Future<void> _leave(BuildContext context) async {
+    final navigator = Navigator.of(context);
+    if (await showLeaveGroupDialog(context, group: group)) navigator.pop();
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final members = ref.watch(membersProvider(group.id)).value;
@@ -68,8 +78,25 @@ class _Loaded extends ConsumerWidget {
               icon: const Icon(Icons.person_add_alt_outlined),
               tooltip: 'Invite someone',
             ),
+            PopupMenuButton<void>(
+              key: const Key('group-menu'),
+              itemBuilder: (_) => [
+                PopupMenuItem(
+                  onTap: () => _leave(context),
+                  child: const ListTile(
+                    leading: Icon(Icons.logout),
+                    title: Text('Leave group'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+              ],
+            ),
           ],
+          // Scrollable, so each label gets its own width: four fixed
+          // equal tabs squeezed "Expenses" into "History" on phones.
           bottom: const TabBar(
+            isScrollable: true,
+            tabAlignment: TabAlignment.center,
             tabs: [
               Tab(text: 'Balances'),
               Tab(text: 'Settle up'),

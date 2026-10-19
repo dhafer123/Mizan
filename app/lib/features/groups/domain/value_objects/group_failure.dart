@@ -26,6 +26,10 @@ class GroupFailure extends Failure {
     GroupError.inviteUsed => 'This invite was already used. Ask for a new one.',
     GroupError.alreadyMember => "You're already in this group.",
     GroupError.placeholderTaken => 'Someone already joined as this member.',
+    GroupError.balanceNotZero =>
+      'Settle up first: you can leave once your balance is 0.',
+    GroupError.unsyncedChanges =>
+      "Some changes in this group haven't synced yet. Sync, then try again.",
     GroupError.server => 'Something went wrong on the server. Try again.',
     GroupError.storage => "Couldn't save on this device. Try again.",
   };

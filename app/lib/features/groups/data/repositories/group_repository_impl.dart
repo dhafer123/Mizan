@@ -25,7 +25,7 @@ import '../mappers/shared_expense_mapper.dart';
 import '../remote/groups_api.dart';
 
 /// [GroupRepository] over the local tables (writes queue sync ops) and the
-/// server's invite endpoints. Nothing is thrown past this class.
+/// server's invite and leave endpoints. Nothing is thrown past this class.
 class GroupRepositoryImpl implements GroupRepository {
   const GroupRepositoryImpl(
     this._dao,
@@ -50,6 +50,7 @@ class GroupRepositoryImpl implements GroupRepository {
     'invite_used': GroupError.inviteUsed,
     'already_member': GroupError.alreadyMember,
     'placeholder_taken': GroupError.placeholderTaken,
+    'balance_not_zero': GroupError.balanceNotZero,
   };
 
   @override
@@ -181,6 +182,20 @@ class GroupRepositoryImpl implements GroupRepository {
   @override
   Future<Result<String, GroupFailure>> join(String token) =>
       _call(() => _api.join(token));
+
+  @override
+  Future<Result<void, GroupFailure>> leave(String groupId) async {
+    // A queued op would be refused once this account is out of the group,
+    // and may be what settles its balance: it has to reach the server first.
+    final queued = await _read(() => _dao.hasQueuedOps(groupId));
+    if (queued case Err(:final failure)) return Err(failure);
+    if (queued.valueOrNull!) {
+      return const Err(GroupFailure(GroupError.unsyncedChanges));
+    }
+    final left = await _call(() => _api.leave(groupId));
+    if (left case Err(:final failure)) return Err(failure);
+    return _write(() => _dao.forgetGroup(groupId));
+  }
 
   static Future<Result<T, GroupFailure>> _read<T>(
     Future<T> Function() read,

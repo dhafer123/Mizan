@@ -14,9 +14,11 @@ import '../../../expenses/presentation/shared/failure_message.dart';
 import '../../../mascot/presentation/penny_pose.dart';
 import '../../domain/entities/group.dart';
 import '../shared/group_data_providers.dart';
+import '../shared/leave_group_dialog.dart';
 import '../shared/name_sheet.dart';
 
-/// The groups this account is in. Create one, or join with an invite link.
+/// The groups this account is in. Create one, join with an invite link, or
+/// leave one (from its menu).
 class GroupsScreen extends ConsumerWidget {
   const GroupsScreen({super.key});
 
@@ -109,6 +111,13 @@ class _GroupList extends StatelessWidget {
 
   final List<Group> groups;
 
+  Future<void> _leave(BuildContext context, Group group) async {
+    final messenger = ScaffoldMessenger.of(context);
+    if (await showLeaveGroupDialog(context, group: group)) {
+      messenger.showSnackBar(SnackBar(content: Text('You left ${group.name}.')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListView(
@@ -123,6 +132,20 @@ class _GroupList extends StatelessWidget {
             title: Text(group.name),
             subtitle: Text(group.currency.code),
             onTap: () => context.push(AppRoutes.group(group.id)),
+            trailing: PopupMenuButton<void>(
+              key: Key('group-menu-${group.id}'),
+              tooltip: 'More for ${group.name}',
+              itemBuilder: (_) => [
+                PopupMenuItem(
+                  onTap: () => _leave(context, group),
+                  child: const ListTile(
+                    leading: Icon(Icons.logout),
+                    title: Text('Leave group'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+              ],
+            ),
           ),
       ],
     );

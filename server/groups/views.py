@@ -35,3 +35,9 @@ class JoinView(APIView):
     def post(self, request, token):
         group, member = services.join(request.user, token)
         return Response({"groupId": group.entity_id, "memberId": member.entity_id})
+
+
+class LeaveView(APIView):
+    def post(self, request, group_id):
+        group = services.leave(request.user, group_id)
+        return Response({"groupId": group.entity_id})

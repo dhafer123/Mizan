@@ -1,4 +1,4 @@
-"""Groups through push, invites (valid, expired, reused), joining and claiming placeholders."""
+"""Groups through push, invites (valid, expired, reused), joining, claiming placeholders and leaving."""
 
 import uuid
 from datetime import timedelta
@@ -168,3 +168,71 @@ def test_a_claimed_placeholder_cannot_be_claimed_again(user, ali, flat):
 
     assert (late.status_code, late.json()["code"]) == (409, "placeholder_taken")
     assert (new_invite.status_code, new_invite.json()["code"]) == (400, "not_a_placeholder")
+
+
+# --- Leaving ---
+
+
+def leave(device, group):
+    return device.client.post(f"/groups/{group.entity_id}/leave", format="json")
+
+
+def test_a_settled_member_leaves_and_their_phone_stops_getting_the_group(user, ali, flat):
+    g, sami_member, ali_member = flat
+    ali_member.user = ali
+    ali_member.save()
+    # Ali paid 9.000 for both, then Sami paid him back: Ali's balance is 0.
+    make.shared_expense(g, ali_member, {sami_member.entity_id: 4500, ali_member.entity_id: 4500})
+    make.settlement(g, sami_member, ali_member, 4500)
+    sami, phone = Device(user), Device(ali)
+    cursor = phone.client.get("/sync/pull").json()["cursor"]
+
+    left = leave(phone, g)
+    make.shared_expense(g, sami_member, {sami_member.entity_id: 3000})  # After Ali left.
+
+    assert (left.status_code, left.json()) == (200, {"groupId": g.entity_id})
+    ali_member.refresh_from_db()
+    assert ali_member.deleted
+    # Ali's phone pulls only its own member tombstone, then nothing more.
+    later = phone.client.get(f"/sync/pull?since={cursor}").json()["changes"]
+    rows = [c for c in later if c["entity"] != "entity_history"]
+    assert [(c["entity"], c["state"]["id"], c["state"]["deleted"]) for c in rows] == [
+        ("members", ali_member.entity_id, True)
+    ]
+    # Sami's phone sees Ali removed, with history.
+    changes = sami.client.get("/sync/pull").json()["changes"]
+    ali_rows = [c["state"] for c in changes if c["entity"] == "members" and c["state"]["id"] == ali_member.entity_id]
+    assert ali_rows[-1]["deleted"]
+    assert any(
+        c["state"]["kind"] == "deleted" and c["state"]["entityId"] == ali_member.entity_id
+        for c in changes
+        if c["entity"] == "entity_history"
+    )
+
+
+def test_a_member_who_owes_or_is_owed_cannot_leave(user, ali, flat):
+    g, sami_member, ali_member = flat
+    ali_member.user = ali
+    ali_member.save()
+    make.shared_expense(g, sami_member, {sami_member.entity_id: 4500, ali_member.entity_id: 4500})
+
+    owes = leave(Device(ali), g)
+    owed = leave(Device(user), g)
+
+    assert (owes.status_code, owes.json()["code"]) == (409, "balance_not_zero")
+    assert (owed.status_code, owed.json()["code"]) == (409, "balance_not_zero")
+    assert not Member.objects.filter(group=g, deleted=True).exists()
+
+
+def test_only_a_current_member_can_leave(user, ali, flat):
+    g = flat[0]
+    phone = Device(user)
+
+    outsider = leave(Device(ali), g)
+    first, again = leave(phone, g), leave(phone, g)
+    unknown = phone.client.post(f"/groups/{uuid.uuid4()}/leave", format="json")
+
+    assert (outsider.status_code, outsider.json()["code"]) == (404, "group_not_found")
+    assert first.status_code == 200
+    assert (again.status_code, again.json()["code"]) == (404, "group_not_found")
+    assert unknown.status_code == 404

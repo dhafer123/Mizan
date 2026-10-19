@@ -2,10 +2,13 @@ import 'package:drift/drift.dart';
 
 import '../../../../app/db/app_database.dart';
 import '../../../sync/data/db/outbox_op_type.dart';
+import '../../../sync/data/db/outbox_status.dart';
 import '../../../sync/data/db/pending_op.dart';
 import '../../../sync/data/db/sync_payload.dart';
 import 'groups_table.dart';
 import 'members_table.dart';
+import 'settlements_dao.dart';
+import 'shared_expenses_dao.dart';
 
 part 'groups_dao.g.dart';
 
@@ -177,6 +180,92 @@ class GroupsDao extends DatabaseAccessor<AppDatabase> with _$GroupsDaoMixin {
         _create(memberEntity, member.id, member),
         () => into(members).insert(member),
       );
+
+  /// The ids of [groupId]'s rows by synced entity: the group, its members,
+  /// shared expenses and settlements, removed ones included.
+  Future<Map<String, List<String>>> _rowIds(String groupId) async {
+    final db = attachedDatabase;
+    return {
+      groupEntity: [groupId],
+      memberEntity: await (selectOnly(members)
+            ..addColumns([members.id])
+            ..where(members.groupId.equals(groupId)))
+          .map((r) => r.read(members.id)!)
+          .get(),
+      SharedExpensesDao.entity: await (selectOnly(db.sharedExpenses)
+            ..addColumns([db.sharedExpenses.id])
+            ..where(db.sharedExpenses.groupId.equals(groupId)))
+          .map((r) => r.read(db.sharedExpenses.id)!)
+          .get(),
+      SettlementsDao.entity: await (selectOnly(db.settlements)
+            ..addColumns([db.settlements.id])
+            ..where(db.settlements.groupId.equals(groupId)))
+          .map((r) => r.read(db.settlements.id)!)
+          .get(),
+    };
+  }
+
+  /// Whether a change to [groupId] or one of its rows is still waiting to
+  /// be pushed.
+  Future<bool> hasQueuedOps(String groupId) => transaction(() async {
+    final outbox = attachedDatabase.outbox;
+    for (final MapEntry(key: entity, value: ids)
+        in (await _rowIds(groupId)).entries) {
+      final queued = await (select(outbox)
+            ..where(
+              (o) =>
+                  o.entity.equals(entity) &
+                  o.entityId.isIn(ids) &
+                  o.status.equalsValue(OutboxStatus.rejected).not(),
+            )
+            ..limit(1))
+          .get();
+      if (queued.isNotEmpty) return true;
+    }
+    return false;
+  });
+
+  /// Removes [groupId] and everything in it from this phone: its rows,
+  /// their server shadows, history and refused ops, and any backfill.
+  ///
+  /// Queues no op on purpose: this account already left the group on the
+  /// server, which sends this phone nothing more from it.
+  Future<void> forgetGroup(String groupId) => transaction(() async {
+    final db = attachedDatabase;
+    final tables = <String, TableInfo<Table, Object?>>{
+      groupEntity: groups,
+      memberEntity: members,
+      SharedExpensesDao.entity: db.sharedExpenses,
+      SettlementsDao.entity: db.settlements,
+    };
+    for (final MapEntry(key: entity, value: ids)
+        in (await _rowIds(groupId)).entries) {
+      if (ids.isEmpty) continue;
+      final table = tables[entity]!;
+      await db.customUpdate(
+        'DELETE FROM "${table.actualTableName}" '
+        'WHERE id IN (${List.filled(ids.length, '?').join(', ')})',
+        variables: [for (final id in ids) Variable.withString(id)],
+        updates: {table},
+        updateKind: UpdateKind.delete,
+      );
+      await (db.delete(db.serverRows)..where(
+            (r) => r.entity.equals(entity) & r.entityId.isIn(ids),
+          ))
+          .go();
+      await (db.delete(db.entityHistory)..where(
+            (h) => h.entity.equals(entity) & h.entityId.isIn(ids),
+          ))
+          .go();
+      await (db.delete(db.outbox)..where(
+            (o) => o.entity.equals(entity) & o.entityId.isIn(ids),
+          ))
+          .go();
+    }
+    await (db.delete(
+      db.groupBackfills,
+    )..where((b) => b.groupId.equals(groupId))).go();
+  });
 
   static PendingOp _create(String entity, String id, DataClass row) =>
       PendingOp(

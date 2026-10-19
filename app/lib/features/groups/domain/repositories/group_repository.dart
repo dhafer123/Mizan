@@ -69,4 +69,9 @@ abstract interface class GroupRepository {
   /// Joins the invite's group. Returns the group's id. Its rows arrive with
   /// the next sync.
   Future<Result<String, GroupFailure>> join(String token);
+
+  /// Leaves the group on the server (which checks this account's balance is
+  /// 0), then removes it from this phone. Refused while any of the group's
+  /// changes are still waiting to sync.
+  Future<Result<void, GroupFailure>> leave(String groupId);
 }

@@ -9,6 +9,7 @@ import '../../features/groups/domain/usecases/compute_shares.dart';
 import '../../features/groups/domain/usecases/create_group.dart';
 import '../../features/groups/domain/usecases/create_invite.dart';
 import '../../features/groups/domain/usecases/join_group.dart';
+import '../../features/groups/domain/usecases/leave_group.dart';
 import '../../features/groups/domain/usecases/preview_invite.dart';
 import '../../features/groups/domain/usecases/record_settlement.dart';
 import '../../features/groups/domain/usecases/reverse_settlement.dart';
@@ -70,6 +71,9 @@ PreviewInvite previewInvite(Ref ref) =>
 
 @Riverpod(keepAlive: true)
 JoinGroup joinGroup(Ref ref) => JoinGroup(ref.watch(groupRepositoryProvider));
+
+@Riverpod(keepAlive: true)
+LeaveGroup leaveGroup(Ref ref) => LeaveGroup(ref.watch(groupRepositoryProvider));
 
 @Riverpod(keepAlive: true)
 WatchSharedExpenses watchSharedExpenses(Ref ref) =>

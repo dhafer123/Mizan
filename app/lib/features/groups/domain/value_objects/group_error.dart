@@ -45,6 +45,12 @@ enum GroupError {
   /// The placeholder was claimed by someone else.
   placeholderTaken,
 
+  /// Leaving while someone still owes this member, or they owe someone.
+  balanceNotZero,
+
+  /// Leaving while some of the group's changes haven't synced yet.
+  unsyncedChanges,
+
   /// The server answered with something unexpected.
   server,
 

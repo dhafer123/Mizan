@@ -60,4 +60,9 @@ class GroupsApi {
       _ => throw const FormatException('Bad join answer'),
     };
   }
+
+  /// Removes this account from the group (its balance must be 0).
+  Future<void> leave(String groupId) async {
+    await _dio.post<Object?>('/groups/$groupId/leave');
+  }
 }
