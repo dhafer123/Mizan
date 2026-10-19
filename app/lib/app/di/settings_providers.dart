@@ -11,6 +11,7 @@ import '../../features/settings/domain/repositories/device_preferences_repositor
 import '../../features/settings/domain/repositories/file_exporter.dart';
 import '../../features/settings/domain/repositories/lock_settings_repository.dart';
 import '../../features/settings/domain/usecases/disable_lock.dart';
+import '../../features/settings/domain/usecases/dismiss_voice_hint.dart';
 import '../../features/settings/domain/usecases/export_expenses_csv.dart';
 import '../../features/settings/domain/usecases/finish_onboarding.dart';
 import '../../features/settings/domain/usecases/get_lock_status.dart';
@@ -22,6 +23,7 @@ import '../../features/settings/domain/usecases/set_pin.dart';
 import '../../features/settings/domain/usecases/set_reduce_motion.dart';
 import '../../features/settings/domain/usecases/set_theme_choice.dart';
 import '../../features/settings/domain/usecases/should_lock_on_resume.dart';
+import '../../features/settings/domain/usecases/should_show_voice_hint.dart';
 import '../../features/settings/domain/usecases/unlock_with_biometrics.dart';
 import '../../features/settings/domain/usecases/unlock_with_pin.dart';
 import '../../features/settings/domain/usecases/validate_pin.dart';
@@ -117,3 +119,11 @@ NeedsOnboarding needsOnboarding(Ref ref) => NeedsOnboarding(
 @Riverpod(keepAlive: true)
 FinishOnboarding finishOnboarding(Ref ref) =>
     FinishOnboarding(ref.watch(devicePreferencesRepositoryProvider));
+
+@Riverpod(keepAlive: true)
+ShouldShowVoiceHint shouldShowVoiceHint(Ref ref) =>
+    ShouldShowVoiceHint(ref.watch(devicePreferencesRepositoryProvider));
+
+@Riverpod(keepAlive: true)
+DismissVoiceHint dismissVoiceHint(Ref ref) =>
+    DismissVoiceHint(ref.watch(devicePreferencesRepositoryProvider));

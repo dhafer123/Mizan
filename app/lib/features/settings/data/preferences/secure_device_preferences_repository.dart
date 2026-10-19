@@ -17,6 +17,7 @@ class SecureDevicePreferencesRepository implements DevicePreferencesRepository {
   static const themeKey = 'prefs.theme';
   static const onboardedKey = 'prefs.onboarded';
   static const reduceMotionKey = 'prefs.reduceMotion';
+  static const voiceHintSeenKey = 'prefs.voiceHintSeen';
 
   static const _failure = SettingsFailure(SettingsError.storage);
 
@@ -76,6 +77,25 @@ class SecureDevicePreferencesRepository implements DevicePreferencesRepository {
   Future<Result<void, SettingsFailure>> saveOnboarded() async {
     try {
       await _storage.write(key: onboardedKey, value: 'true');
+      return const Ok(null);
+    } on Object {
+      return const Err(_failure);
+    }
+  }
+
+  @override
+  Future<Result<bool, SettingsFailure>> loadVoiceHintSeen() async {
+    try {
+      return Ok(await _storage.read(key: voiceHintSeenKey) == 'true');
+    } on Object {
+      return const Err(_failure);
+    }
+  }
+
+  @override
+  Future<Result<void, SettingsFailure>> saveVoiceHintSeen() async {
+    try {
+      await _storage.write(key: voiceHintSeenKey, value: 'true');
       return const Ok(null);
     } on Object {
       return const Err(_failure);

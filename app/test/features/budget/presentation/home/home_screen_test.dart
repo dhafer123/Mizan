@@ -7,6 +7,7 @@ import 'package:mizan/app/di/budget_providers.dart';
 import 'package:mizan/app/di/core_providers.dart';
 import 'package:mizan/app/di/expenses_providers.dart';
 import 'package:mizan/app/di/groups_providers.dart';
+import 'package:mizan/app/di/settings_providers.dart';
 import 'package:mizan/app/theme/app_colors.dart';
 import 'package:mizan/app/widgets/skeleton.dart';
 import 'package:mizan/core/clock/fake_clock.dart';
@@ -28,10 +29,13 @@ import 'package:mizan/features/groups/domain/value_objects/group_share.dart';
 import 'package:mizan/features/groups/domain/value_objects/my_group_money.dart';
 import 'package:mizan/features/groups/presentation/shared/group_data_providers.dart'
     show myGroupMoneyProvider;
+import 'package:mizan/features/quick_input/presentation/voice_hint_bubble.dart';
+import 'package:mizan/features/quick_input/presentation/voice_hint_controller.dart';
 
 import '../../../../support/fake_auth_repository.dart';
 import '../../../../support/fake_budget_repository.dart';
 import '../../../../support/fake_category_repository.dart';
+import '../../../../support/fake_device_preferences_repository.dart';
 import '../../../../support/fake_expense_repository.dart';
 import '../../../../support/fake_group_repository.dart';
 import '../../../../support/fake_income_source_repository.dart';
@@ -106,6 +110,7 @@ Future<void> _pump(
   _Repos repos, {
   MyGroupMoney? groups,
   ForecastRunOut? forecast,
+  FakeDevicePreferencesRepository? preferences,
 }) async {
   // Tall enough to show every card without scrolling.
   tester.view
@@ -130,6 +135,8 @@ Future<void> _pump(
           myGroupMoneyProvider.overrideWith((ref) => Stream.value(groups)),
         if (forecast != null)
           forecastRunOutProvider.overrideWithValue(forecast),
+        if (preferences != null)
+          devicePreferencesRepositoryProvider.overrideWithValue(preferences),
       ],
       child: const MaterialApp(home: HomeScreen()),
     ),
@@ -256,6 +263,53 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Edit expense'), findsOneWidget);
+    });
+
+    testWidgets('a bubble points at the voice button now and then, until '
+        'voice is first used', (tester) async {
+      final preferences = FakeDevicePreferencesRepository();
+      await _pump(tester, _Repos(), preferences: preferences);
+      await tester.pumpAndSettle();
+      double opacity() => tester
+          .widget<AnimatedOpacity>(
+            find.descendant(
+              of: find.byType(VoiceHintBubble),
+              matching: find.byType(AnimatedOpacity),
+            ),
+          )
+          .opacity;
+      expect(find.text('Say your expense'), findsOneWidget);
+      expect(opacity(), 1);
+
+      // It comes and goes so it doesn't crowd the screen.
+      await tester.pump(VoiceHintBubble.shown);
+      expect(opacity(), 0);
+      await tester.pump(VoiceHintBubble.hidden);
+      expect(opacity(), 1);
+
+      // Opening voice input (from the bubble or the button) retires it.
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(HomeScreen)),
+      );
+      await container.read(voiceHintControllerProvider.notifier).dismiss();
+      await tester.pump();
+
+      expect(find.byType(VoiceHintBubble), findsNothing);
+      expect(preferences.voiceHintSeen, isTrue);
+    });
+
+    testWidgets('no bubble once voice input was used on this phone', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        _Repos(),
+        preferences: FakeDevicePreferencesRepository(voiceHintSeen: true),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(VoiceHintBubble), findsNothing);
+      expect(find.byTooltip('Say an expense'), findsOneWidget);
     });
 
     testWidgets('the add button opens a new expense', (tester) async {

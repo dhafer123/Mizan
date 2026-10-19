@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -12,6 +14,8 @@ import '../../../mascot/presentation/penny_card.dart';
 import '../../../mascot/presentation/penny_lines.dart';
 import '../../../mascot/presentation/penny_providers.dart';
 import '../../../quick_input/presentation/quick_input_sheet.dart';
+import '../../../quick_input/presentation/voice_hint_bubble.dart';
+import '../../../quick_input/presentation/voice_hint_controller.dart';
 import '../../../sync/presentation/sync_status_button.dart';
 import '../../domain/value_objects/dashboard.dart';
 import 'dashboard_provider.dart';
@@ -53,6 +57,7 @@ class HomeScreen extends ConsumerWidget {
                 const SkeletonCards(heights: [96, 200, 120, 280, 200]),
           ),
       floatingActionButton: _AddButtons(
+        showVoiceHint: ref.watch(voiceHintControllerProvider).value ?? false,
         onQuickInput: () => _quickInput(context, ref),
         onAdd: () async {
           final saved = await showExpenseSheet(context);
@@ -64,8 +69,14 @@ class HomeScreen extends ConsumerWidget {
 }
 
 class _AddButtons extends StatelessWidget {
-  const _AddButtons({required this.onQuickInput, required this.onAdd});
+  const _AddButtons({
+    required this.showVoiceHint,
+    required this.onQuickInput,
+    required this.onAdd,
+  });
 
+  /// Point out the voice button with a bubble (until it's first used).
+  final bool showVoiceHint;
   final VoidCallback onQuickInput;
   final VoidCallback onAdd;
 
@@ -75,11 +86,20 @@ class _AddButtons extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        FloatingActionButton.small(
-          heroTag: 'quick-input',
-          onPressed: onQuickInput,
-          tooltip: 'Say an expense',
-          child: const Icon(Icons.mic_none),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (showVoiceHint) ...[
+              Flexible(child: VoiceHintBubble(onTap: onQuickInput)),
+              const SizedBox(width: 4),
+            ],
+            FloatingActionButton.small(
+              heroTag: 'quick-input',
+              onPressed: onQuickInput,
+              tooltip: 'Say an expense',
+              child: const Icon(Icons.mic_none),
+            ),
+          ],
         ),
         const SizedBox(height: 12),
         FloatingActionButton.extended(
@@ -103,6 +123,7 @@ void _pennyReacts(WidgetRef ref) {
 }
 
 Future<void> _quickInput(BuildContext context, WidgetRef ref) async {
+  unawaited(ref.read(voiceHintControllerProvider.notifier).dismiss());
   final saved = await showQuickInputSheet(context);
   if (saved == null || saved == 0 || !context.mounted) return;
   _pennyReacts(ref);

@@ -10,11 +10,13 @@ class FakeDevicePreferencesRepository implements DevicePreferencesRepository {
     this.theme = ThemeChoice.system,
     this.onboarded = false,
     this.reduceMotion = false,
+    this.voiceHintSeen = false,
   });
 
   ThemeChoice theme;
   bool onboarded;
   bool reduceMotion;
+  bool voiceHintSeen;
 
   /// When set, every load fails with this.
   SettingsFailure? loadFailure;
@@ -65,6 +67,20 @@ class FakeDevicePreferencesRepository implements DevicePreferencesRepository {
   Future<Result<void, SettingsFailure>> saveOnboarded() async {
     if (saveFailure case final failure?) return Err(failure);
     onboarded = true;
+    return const Ok(null);
+  }
+
+  @override
+  Future<Result<bool, SettingsFailure>> loadVoiceHintSeen() async =>
+      switch (loadFailure) {
+        final failure? => Err(failure),
+        null => Ok(voiceHintSeen),
+      };
+
+  @override
+  Future<Result<void, SettingsFailure>> saveVoiceHintSeen() async {
+    if (saveFailure case final failure?) return Err(failure);
+    voiceHintSeen = true;
     return const Ok(null);
   }
 }
