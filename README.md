@@ -14,7 +14,7 @@
 
 | Setup | Home and forecast | Voice entry | Shared rent | Settled |
 |:-:|:-:|:-:|:-:|:-:|
-| <img src="docs/media/welcome.png" width="150" alt="Welcome screen with Penny, the mascot"> | <img src="docs/media/home.png" width="150" alt="Home: 104 DT left, money runs out around Oct 25"> | <img src="docs/media/voice.png" width="150" alt="Check before saving: coffee 2.500, taxi 8.000"> | <img src="docs/media/split.png" width="150" alt="Flat 4B balances: you're owed 286.500 DT"> | <img src="docs/media/settled.png" width="150" alt="Everyone is settled up"> |
+| <img src="docs/media/welcome.png" width="150" alt="Welcome screen with Penny, the mascot"> | <img src="docs/media/home-mizan.png" width="150" alt="Home: 104 DT left, money runs out around Oct 25"> | <img src="docs/media/voice.png" width="150" alt="Check before saving: coffee 2.500, taxi 8.000"> | <img src="docs/media/split.png" width="150" alt="Flat 4B balances: you're owed 286.500 DT"> | <img src="docs/media/settled.png" width="150" alt="Everyone is settled up"> |
 
 ## Why
 
